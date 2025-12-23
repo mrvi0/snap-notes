@@ -10,9 +10,8 @@ from PyQt5.QtWidgets import (
     QTextEdit, QLineEdit, QPushButton, QLabel, QMessageBox, QDialog,
     QDialogButtonBox, QListWidgetItem, QMenuBar, QMenu, QAction
 )
-from PyQt5.QtGui import QFont, QIcon, QTextDocument
-from PyQt5.QtCore import Qt, QTimer, QTimer
-from PyQt5.QtGui import QFont, QIcon
+from PyQt5.QtGui import QFont, QIcon, QTextDocument, QTextCursor
+from PyQt5.QtCore import Qt, QTimer
 
 from models import Note
 from database import DatabaseManager
@@ -21,6 +20,7 @@ from settings import Settings
 from themes import get_theme
 from settings_dialog import SettingsDialog
 from sync_settings_dialog import SyncSettingsDialog
+from markdown_utils import convert_plain_to_markdown, convert_markdown_to_plain, apply_markdown_formatting
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +84,7 @@ class NotesMainWindow(QMainWindow):
         self.auto_save_timer.timeout.connect(self.auto_save_note)
         self.has_unsaved_changes = False
         self.sort_order = "updated"  # По умолчанию по дате изменения
+        self.is_markdown_mode = False  # Режим Markdown
         
         self.init_ui()
         self.apply_theme()
@@ -166,6 +167,73 @@ class NotesMainWindow(QMainWindow):
         right_layout = QVBoxLayout(right_panel)
         right_layout.setContentsMargins(0, 0, 0, 0)
         right_layout.setSpacing(0)
+        
+        # Панель инструментов форматирования (показывается только в Markdown режиме)
+        self.format_toolbar = QWidget()
+        self.format_toolbar.setObjectName("format_toolbar")
+        format_layout = QHBoxLayout(self.format_toolbar)
+        format_layout.setContentsMargins(10, 5, 10, 5)
+        format_layout.setSpacing(5)
+        
+        # Кнопки форматирования
+        self.bold_btn = QPushButton("B")
+        self.bold_btn.setObjectName("format_button")
+        self.bold_btn.setFixedSize(30, 30)
+        self.bold_btn.setFont(QFont("Arial", 12, QFont.Bold))
+        self.bold_btn.setToolTip("Жирный")
+        self.bold_btn.clicked.connect(lambda: self.apply_format('bold'))
+        format_layout.addWidget(self.bold_btn)
+        
+        self.italic_btn = QPushButton("I")
+        self.italic_btn.setObjectName("format_button")
+        self.italic_btn.setFixedSize(30, 30)
+        self.italic_btn.setFont(QFont("Arial", 12))
+        self.italic_btn.setStyleSheet("font-style: italic;")
+        self.italic_btn.setToolTip("Курсив")
+        self.italic_btn.clicked.connect(lambda: self.apply_format('italic'))
+        format_layout.addWidget(self.italic_btn)
+        
+        self.strikethrough_btn = QPushButton("S")
+        self.strikethrough_btn.setObjectName("format_button")
+        self.strikethrough_btn.setFixedSize(30, 30)
+        self.strikethrough_btn.setFont(QFont("Arial", 12))
+        self.strikethrough_btn.setToolTip("Зачеркнутый")
+        self.strikethrough_btn.clicked.connect(lambda: self.apply_format('strikethrough'))
+        format_layout.addWidget(self.strikethrough_btn)
+        
+        self.header1_btn = QPushButton("H1")
+        self.header1_btn.setObjectName("format_button")
+        self.header1_btn.setFixedSize(35, 30)
+        self.header1_btn.setToolTip("Заголовок 1")
+        self.header1_btn.clicked.connect(lambda: self.apply_format('header1'))
+        format_layout.addWidget(self.header1_btn)
+        
+        self.header2_btn = QPushButton("H2")
+        self.header2_btn.setObjectName("format_button")
+        self.header2_btn.setFixedSize(35, 30)
+        self.header2_btn.setToolTip("Заголовок 2")
+        self.header2_btn.clicked.connect(lambda: self.apply_format('header2'))
+        format_layout.addWidget(self.header2_btn)
+        
+        self.list_btn = QPushButton("•")
+        self.list_btn.setObjectName("format_button")
+        self.list_btn.setFixedSize(30, 30)
+        self.list_btn.setFont(QFont("Arial", 14))
+        self.list_btn.setToolTip("Список")
+        self.list_btn.clicked.connect(lambda: self.apply_format('list'))
+        format_layout.addWidget(self.list_btn)
+        
+        format_layout.addStretch()
+        
+        # Переключатель Markdown
+        self.markdown_toggle = QPushButton("Markdown")
+        self.markdown_toggle.setCheckable(True)
+        self.markdown_toggle.setToolTip("Переключить режим Markdown")
+        self.markdown_toggle.clicked.connect(self.toggle_markdown_mode)
+        format_layout.addWidget(self.markdown_toggle)
+        
+        self.format_toolbar.hide()  # Скрываем по умолчанию
+        right_layout.addWidget(self.format_toolbar)
         
         # Заголовок
         self.title_input = QLineEdit()
@@ -336,9 +404,9 @@ class NotesMainWindow(QMainWindow):
                     logger.info("Заметка автоматически сохранена")
             else:
                 # Создание новой заметки
-                if title or content:
-                    note = self.db_manager.create_note(title or "Без названия", content)
-                    self.current_note = note
+                        if title or content:
+                            note = self.db_manager.create_note(title or "Без названия", content, self.is_markdown_mode)
+                            self.current_note = note
                     self.load_notes()
                     # НЕ показываем info_label при создании новой заметки
                     self.info_label.hide()
@@ -445,6 +513,15 @@ class NotesMainWindow(QMainWindow):
                 self.current_note = note
                 self.title_input.setText(note.title)
                 self.content_input.setPlainText(note.content)
+                
+                # Устанавливаем режим Markdown
+                self.is_markdown_mode = note.is_markdown
+                self.markdown_toggle.setChecked(note.is_markdown)
+                if note.is_markdown:
+                    self.format_toolbar.show()
+                else:
+                    self.format_toolbar.hide()
+                
                 self.info_label.setText(
                     f"Создано: {note.created_at.strftime('%Y-%m-%d %H:%M')}\n"
                     f"Изменено: {note.updated_at.strftime('%Y-%m-%d %H:%M')}"
@@ -476,6 +553,12 @@ class NotesMainWindow(QMainWindow):
         self.info_label.hide()  # Скрываем при создании новой заметки
         self.info_container.hide()  # Скрываем контейнер
         self.delete_btn.hide()
+        
+        # Сбрасываем режим Markdown
+        self.is_markdown_mode = False
+        self.markdown_toggle.setChecked(False)
+        self.format_toolbar.hide()
+        
         self.has_unsaved_changes = False
         self.title_input.setFocus()
     
