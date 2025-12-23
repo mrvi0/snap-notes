@@ -88,6 +88,7 @@ class NotesMainWindow(QMainWindow):
         
         self.init_ui()
         self.apply_theme()
+        self.update_markdown_toggle_style()  # Устанавливаем начальный стиль кнопки
         self.load_notes()
     
     def init_ui(self):
