@@ -657,7 +657,6 @@ class NotesMainWindow(QMainWindow):
         if checked:
             # Переключаемся на Markdown
             self.is_markdown_mode = True
-            self.format_toolbar.show()
             # Конвертируем обычный текст в Markdown
             if current_content:
                 markdown_content = convert_plain_to_markdown(current_content)
@@ -665,11 +664,24 @@ class NotesMainWindow(QMainWindow):
         else:
             # Переключаемся на обычный текст
             self.is_markdown_mode = False
-            self.format_toolbar.hide()
-            # Конвертируем Markdown в обычный текст
+            # Конвертируем Markdown в обычный текст и сохраняем
             if current_content:
                 plain_content = convert_markdown_to_plain(current_content)
                 self.content_input.setPlainText(plain_content)
+                # Сохраняем конвертированный текст сразу
+                if self.current_note:
+                    title = self.title_input.text().strip()
+                    self.db_manager.update_note(
+                        self.current_note.id, 
+                        title or "Без названия", 
+                        plain_content, 
+                        False  # is_markdown = False
+                    )
+                    self.current_note = self.db_manager.get_note(self.current_note.id)
+                    self.load_notes()
+        
+        # Обновляем стиль кнопки
+        self.update_markdown_toggle_style()
         
         # Обновляем заметку в базе данных
         if self.current_note:
