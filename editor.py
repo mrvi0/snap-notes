@@ -81,7 +81,17 @@ class MarkdownEditor:
             self.text_edit.setMarkdown(current_markdown)
         else:
             # В raw режиме показываем чистый markdown-текст
+            # Сбрасываем все форматирование, чтобы текст был обычным
             self.text_edit.setPlainText(current_markdown)
+            
+            # Устанавливаем обычный шрифт для всего текста в RAW режиме
+            cursor = self.text_edit.textCursor()
+            cursor.select(QTextCursor.SelectionType.Document)
+            char_format = QTextCharFormat()
+            char_format.setFontWeight(QFont.Weight.Normal)  # Обычный вес, не жирный
+            char_format.setFontItalic(False)  # Не курсив
+            cursor.setCharFormat(char_format)
+            cursor.clearSelection()
         
         # Восстанавливаем позицию курсора
         cursor = self.text_edit.textCursor()
@@ -115,7 +125,17 @@ class MarkdownEditor:
             # PyQt6 QTextEdit имеет встроенный метод setMarkdown
             self.text_edit.setMarkdown(markdown_text)
         else:
+            # В RAW режиме устанавливаем как plain text и сбрасываем форматирование
             self.text_edit.setPlainText(markdown_text)
+            
+            # Устанавливаем обычный шрифт для всего текста
+            cursor = self.text_edit.textCursor()
+            cursor.select(QTextCursor.SelectionType.Document)
+            char_format = QTextCharFormat()
+            char_format.setFontWeight(QFont.Weight.Normal)  # Обычный вес, не жирный
+            char_format.setFontItalic(False)  # Не курсив
+            cursor.setCharFormat(char_format)
+            cursor.clearSelection()
     
     def apply_format(self, format_type: str) -> None:
         """
