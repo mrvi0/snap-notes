@@ -201,10 +201,14 @@ def convert_html_to_markdown(html: str) -> str:
     
     # Обрабатываем форматирование в правильном порядке (сначала вложенные, потом внешние)
     # Важно: обрабатываем span с inline стилями перед обычными тегами
+    # Используем нежадный поиск для правильной обработки вложенных тегов
     
     # Жирный (обрабатываем span с font-weight и теги b/strong)
-    # Обрабатываем span с font-weight в style атрибуте
+    # Обрабатываем span с font-weight в style атрибуте (может быть несколько стилей в одном атрибуте)
+    # Паттерн ищет font-weight в любом месте style атрибута
     html = re.sub(r'<span[^>]*style="[^"]*font-weight:\s*(?:600|bold|700|800|900)[^"]*"[^>]*>(.*?)</span>', r'**\1**', html, flags=re.DOTALL | re.IGNORECASE)
+    # Также обрабатываем случаи, когда font-weight может быть в другом порядке в style
+    html = re.sub(r'<span[^>]*style="[^"]*font-weight[^"]*:\s*(?:600|bold|700|800|900)[^"]*"[^>]*>(.*?)</span>', r'**\1**', html, flags=re.DOTALL | re.IGNORECASE)
     # Обрабатываем обычные теги
     html = re.sub(r'<b[^>]*>(.*?)</b>', r'**\1**', html, flags=re.DOTALL)
     html = re.sub(r'<strong[^>]*>(.*?)</strong>', r'**\1**', html, flags=re.DOTALL)
