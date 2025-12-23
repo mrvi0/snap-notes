@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
     QTextEdit, QLineEdit, QPushButton, QLabel, QMessageBox, QDialog,
     QDialogButtonBox, QListWidgetItem, QMenuBar, QMenu, QAction
 )
-from PyQt5.QtGui import QFont, QIcon, QTextDocument, QTextCursor
+from PyQt5.QtGui import QFont, QIcon, QTextDocument, QTextCursor, QTextListFormat, QTextCharFormat, QKeyEvent
 from PyQt5.QtCore import Qt, QTimer
 
 from models import Note
@@ -794,8 +794,20 @@ class NotesMainWindow(QMainWindow):
                 format.setFontPointSize(16)
                 format.setFontWeight(QFont.Bold)
             elif format_type == 'list':
-                # Для списков нужно добавить маркер в начало строки
-                cursor.insertText("• ")
+                # Создаем настоящий список используя QTextList
+                list_format = QTextListFormat()
+                list_format.setStyle(QTextListFormat.ListDisc)  # Маркированный список
+                list_format.setIndent(1)
+                
+                # Если курсор находится внутри существующего списка, добавляем новый элемент
+                current_list = cursor.currentList()
+                if current_list:
+                    # Добавляем новый элемент в существующий список
+                    cursor.insertBlock()
+                    current_list.add(cursor.block())
+                else:
+                    # Создаем новый список
+                    cursor.insertList(list_format)
                 return
             
             cursor.setCharFormat(format)
