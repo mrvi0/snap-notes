@@ -727,7 +727,10 @@ class NotesMainWindow(QMainWindow):
             markdown_content = self.content_input.toPlainText()
             if markdown_content:
                 html_content = convert_markdown_to_html(markdown_content)
-                self.content_input.setHtml(html_content)
+                # Убираем CSS стили из HTML перед установкой
+                from markdown_utils import extract_body_content
+                clean_html = extract_body_content(html_content) if html_content else html_content
+                self.content_input.setHtml(clean_html)
             
             # Сохраняем конвертированный текст сразу
             if self.current_note:
