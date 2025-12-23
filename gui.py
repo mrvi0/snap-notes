@@ -354,9 +354,19 @@ class NotesMainWindow(QMainWindow):
         if checked:
             self.editor.set_mode(EditorMode.VISUAL)
             self.mode_toggle.setText("Visual")
+            # В визуальном режиме применяем обычные стили из темы
+            self.apply_theme()  # Переприменяем тему для восстановления стилей
         else:
             self.editor.set_mode(EditorMode.RAW)
             self.mode_toggle.setText("Raw")
+            # В RAW режиме применяем стиль для обычного текста (не жирный, обычный размер)
+            font_size = self.settings.get('font_size', 12)
+            self.content_input.setStyleSheet(f"""
+                QTextEdit {{
+                    font-weight: normal !important;
+                    font-size: {font_size}pt !important;
+                }}
+            """)
     
     def on_add_note(self):
         """Создает новую заметку."""
