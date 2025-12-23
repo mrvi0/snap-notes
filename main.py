@@ -4,7 +4,7 @@
 """
 import sys
 import logging
-from PyQt5.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication
 
 from gui import NotesMainWindow
 
@@ -31,7 +31,7 @@ def main():
         window.show()
         
         logger.info("Приложение запущено")
-        sys.exit(app.exec_())
+        sys.exit(app.exec())
     except Exception as e:
         logger.critical(f"Критическая ошибка при запуске приложения: {e}")
         sys.exit(1)
@@ -39,4 +39,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
