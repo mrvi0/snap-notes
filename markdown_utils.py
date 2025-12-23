@@ -199,23 +199,23 @@ def convert_html_to_markdown(html: str) -> str:
     html = re.sub(r'<h2[^>]*>(.*?)</h2>', r'## \1', html, flags=re.DOTALL)
     html = re.sub(r'<h3[^>]*>(.*?)</h3>', r'### \1', html, flags=re.DOTALL)
     
+    # Обрабатываем форматирование в правильном порядке (сначала вложенные, потом внешние)
+    # Важно: обрабатываем span с inline стилями перед обычными тегами
+    
     # Жирный (обрабатываем span с font-weight и теги b/strong)
-    # Сначала обрабатываем вложенные теги, потом внешние
-    # Обрабатываем span с font-weight:600 или font-weight:bold
+    # Обрабатываем span с font-weight в style атрибуте
     html = re.sub(r'<span[^>]*style="[^"]*font-weight:\s*(?:600|bold|700|800|900)[^"]*"[^>]*>(.*?)</span>', r'**\1**', html, flags=re.DOTALL | re.IGNORECASE)
-    html = re.sub(r'<span[^>]*font-weight:\s*(?:600|bold|700|800|900)[^>]*>(.*?)</span>', r'**\1**', html, flags=re.DOTALL | re.IGNORECASE)
+    # Обрабатываем обычные теги
     html = re.sub(r'<b[^>]*>(.*?)</b>', r'**\1**', html, flags=re.DOTALL)
     html = re.sub(r'<strong[^>]*>(.*?)</strong>', r'**\1**', html, flags=re.DOTALL)
     
     # Курсив (обрабатываем span с font-style:italic и теги i/em)
     html = re.sub(r'<span[^>]*style="[^"]*font-style:\s*italic[^"]*"[^>]*>(.*?)</span>', r'*\1*', html, flags=re.DOTALL | re.IGNORECASE)
-    html = re.sub(r'<span[^>]*font-style:\s*italic[^>]*>(.*?)</span>', r'*\1*', html, flags=re.DOTALL | re.IGNORECASE)
     html = re.sub(r'<i[^>]*>(.*?)</i>', r'*\1*', html, flags=re.DOTALL)
     html = re.sub(r'<em[^>]*>(.*?)</em>', r'*\1*', html, flags=re.DOTALL)
     
     # Зачеркнутый (обрабатываем span с text-decoration и теги s/strike/del)
     html = re.sub(r'<span[^>]*style="[^"]*text-decoration:\s*line-through[^"]*"[^>]*>(.*?)</span>', r'~~\1~~', html, flags=re.DOTALL | re.IGNORECASE)
-    html = re.sub(r'<span[^>]*text-decoration:\s*line-through[^>]*>(.*?)</span>', r'~~\1~~', html, flags=re.DOTALL | re.IGNORECASE)
     html = re.sub(r'<s[^>]*>(.*?)</s>', r'~~\1~~', html, flags=re.DOTALL)
     html = re.sub(r'<strike[^>]*>(.*?)</strike>', r'~~\1~~', html, flags=re.DOTALL)
     html = re.sub(r'<del[^>]*>(.*?)</del>', r'~~\1~~', html, flags=re.DOTALL)
