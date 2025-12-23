@@ -168,24 +168,7 @@ class NotesMainWindow(QMainWindow):
         right_layout.setContentsMargins(0, 0, 0, 0)
         right_layout.setSpacing(0)
         
-        # Панель с переключателем Markdown (всегда видна)
-        markdown_bar = QWidget()
-        markdown_bar.setObjectName("markdown_bar")
-        markdown_bar_layout = QHBoxLayout(markdown_bar)
-        markdown_bar_layout.setContentsMargins(10, 5, 10, 5)
-        markdown_bar_layout.setSpacing(5)
-        markdown_bar_layout.addStretch()
-        
-        # Переключатель Markdown (всегда виден)
-        self.markdown_toggle = QPushButton("Markdown")
-        self.markdown_toggle.setCheckable(True)
-        self.markdown_toggle.setToolTip("Переключить режим Markdown")
-        self.markdown_toggle.clicked.connect(self.toggle_markdown_mode)
-        markdown_bar_layout.addWidget(self.markdown_toggle)
-        
-        right_layout.addWidget(markdown_bar)
-        
-        # Панель инструментов форматирования (показывается только в Markdown режиме)
+        # Панель инструментов форматирования (всегда видна)
         self.format_toolbar = QWidget()
         self.format_toolbar.setObjectName("format_toolbar")
         format_layout = QHBoxLayout(self.format_toolbar)
@@ -242,7 +225,14 @@ class NotesMainWindow(QMainWindow):
         
         format_layout.addStretch()
         
-        self.format_toolbar.hide()  # Скрываем по умолчанию
+        # Переключатель Markdown (toggle с визуальной индикацией)
+        self.markdown_toggle = QPushButton("Markdown")
+        self.markdown_toggle.setObjectName("markdown_toggle")
+        self.markdown_toggle.setCheckable(True)
+        self.markdown_toggle.setToolTip("Переключить режим Markdown")
+        self.markdown_toggle.clicked.connect(self.toggle_markdown_mode)
+        format_layout.addWidget(self.markdown_toggle)
+        
         right_layout.addWidget(self.format_toolbar)
         
         # Заголовок
@@ -567,7 +557,7 @@ class NotesMainWindow(QMainWindow):
         # Сбрасываем режим Markdown
         self.is_markdown_mode = False
         self.markdown_toggle.setChecked(False)
-        self.format_toolbar.hide()
+        self.update_markdown_toggle_style()
         
         self.has_unsaved_changes = False
         self.title_input.setFocus()
