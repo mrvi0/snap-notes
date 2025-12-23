@@ -512,25 +512,40 @@ class NotesMainWindow(QMainWindow):
             title_label.setWordWrap(True)
             # Ограничиваем ширину заголовка
             title_label.setMaximumWidth(max_item_width - 20)  # Учитываем отступы layout
+            # Ограничиваем высоту заголовка до 1-2 строк
+            title_font_metrics = title_label.fontMetrics()
+            title_line_height = title_font_metrics.lineSpacing()
+            title_label.setMaximumHeight(title_line_height * 2)  # Максимум 2 строки для заголовка
             item_layout.addWidget(title_label)
             
-            # Предпросмотр (короткое описание) - максимум 2 строки
+            # Предпросмотр (короткое описание) - строго 2 строки
             preview = self._strip_markdown_preview(note.markdown_content)
+            
+            # Создаем временный QLabel для измерения текста
+            temp_label = QLabel()
+            temp_label.setWordWrap(True)
+            temp_label.setStyleSheet("color: #666; font-size: 11pt;")
+            temp_label.setMaximumWidth(max_item_width - 20)
+            temp_font_metrics = temp_label.fontMetrics()
+            line_height = temp_font_metrics.lineSpacing()
+            
+            # Ограничиваем текст так, чтобы он помещался ровно в 2 строки
+            # Вычисляем максимальное количество символов для 2 строк
+            max_chars_per_line = (max_item_width - 20) // temp_font_metrics.averageCharWidth()
+            max_chars = max_chars_per_line * 2  # 2 строки
+            
+            if len(preview) > max_chars:
+                # Обрезаем до нужной длины и добавляем многоточие
+                preview = preview[:max_chars - 3] + "..."
             
             preview_label = QLabel(preview)
             preview_label.setWordWrap(True)
             preview_label.setStyleSheet("color: #666; font-size: 11pt;")
             # Ограничиваем ширину предпросмотра
             preview_label.setMaximumWidth(max_item_width - 20)  # Учитываем отступы layout
-            # Ограничиваем высоту до 2 строк (примерно 2 * line-height)
-            # Используем фиксированную высоту, чтобы текст не наезжал на заголовок
-            from PyQt6.QtCore import QSize
-            font_metrics = preview_label.fontMetrics()
-            line_height = font_metrics.lineSpacing()
-            max_height = line_height * 2 + 4  # 2 строки + небольшой отступ
-            preview_label.setMaximumHeight(max_height)
-            # Обрезаем текст, если он не помещается в 2 строки
-            # Используем setTextFormat для правильного переноса
+            # Строго ограничиваем высоту до 2 строк
+            preview_label.setMaximumHeight(line_height * 2)
+            preview_label.setMinimumHeight(line_height * 2)  # Фиксируем высоту
             preview_label.setTextFormat(Qt.TextFormat.PlainText)
             item_layout.addWidget(preview_label)
             
