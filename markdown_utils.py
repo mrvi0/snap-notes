@@ -144,6 +144,35 @@ def apply_markdown_formatting(text: str, format_type: str, selection_start: int 
     return new_text, new_start, new_end
 
 
+def extract_body_content(html: str) -> str:
+    """
+    Извлекает только содержимое body из HTML, убирая CSS стили и метаданные.
+    
+    Args:
+        html: Полный HTML текст
+        
+    Returns:
+        Только содержимое body без стилей
+    """
+    if not html:
+        return html
+    
+    # Убираем style теги и их содержимое
+    html = re.sub(r'<style[^>]*>.*?</style>', '', html, flags=re.DOTALL | re.IGNORECASE)
+    
+    # Извлекаем содержимое body, если есть
+    body_match = re.search(r'<body[^>]*>(.*?)</body>', html, flags=re.DOTALL | re.IGNORECASE)
+    if body_match:
+        html = body_match.group(1)
+    else:
+        # Если нет body, ищем содержимое после head
+        html_match = re.search(r'</head>(.*?)(?:</html>|$)', html, flags=re.DOTALL | re.IGNORECASE)
+        if html_match:
+            html = html_match.group(1)
+    
+    return html
+
+
 def convert_html_to_markdown(html: str) -> str:
     """
     Конвертирует HTML в Markdown.
@@ -156,6 +185,9 @@ def convert_html_to_markdown(html: str) -> str:
     """
     if not html:
         return html
+    
+    # Извлекаем только содержимое body, убирая CSS
+    html = extract_body_content(html)
     
     # Убираем обертки параграфов
     html = re.sub(r'<p[^>]*>', '', html)

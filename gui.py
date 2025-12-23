@@ -548,7 +548,10 @@ class NotesMainWindow(QMainWindow):
                     # Конвертируем markdown в HTML для отображения (если был markdown)
                     if note.content:
                         html_content = convert_markdown_to_html(note.content)
-                        self.content_input.setHtml(html_content)
+                        # Убираем CSS стили из HTML перед установкой
+                        from markdown_utils import extract_body_content
+                        clean_html = extract_body_content(html_content) if html_content else html_content
+                        self.content_input.setHtml(clean_html)
                     else:
                         self.content_input.clear()
                 
