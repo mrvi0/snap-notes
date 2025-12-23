@@ -121,10 +121,25 @@ class DatabaseManager:
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO notes (title, markdown_content, created_at, updated_at)
-                VALUES (?, ?, ?, ?)
-            """, (title, markdown_content, now, now))
+            
+            # Проверяем, есть ли старая колонка content
+            cursor.execute("PRAGMA table_info(notes)")
+            columns = [col[1] for col in cursor.fetchall()]
+            has_old_content = 'content' in columns
+            
+            if has_old_content:
+                # Если есть старая колонка, заполняем её тоже (для совместимости)
+                cursor.execute("""
+                    INSERT INTO notes (title, markdown_content, content, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (title, markdown_content, markdown_content, now, now))
+            else:
+                # Новая схема - только markdown_content
+                cursor.execute("""
+                    INSERT INTO notes (title, markdown_content, created_at, updated_at)
+                    VALUES (?, ?, ?, ?)
+                """, (title, markdown_content, now, now))
+            
             note_id = cursor.lastrowid
             conn.commit()
             
