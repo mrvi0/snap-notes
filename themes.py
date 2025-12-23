@@ -489,6 +489,7 @@ QPushButton:pressed {{
     base_theme = base_theme.replace('{font_size_title}', str(font_size_title))
     
     # Также применяем размер шрифта к другим элементам
+    # НЕ применяем к QLineEdit, так как у него свой размер (font_size_title)
     base_theme += f"""
 QWidget {{
     font-size: {font_size}pt;
@@ -498,6 +499,11 @@ QLabel {{
 }}
 QListWidget {{
     font-size: {font_size}pt;
+}}
+/* Явно переопределяем размер для QLineEdit, чтобы общий стиль QWidget не перезаписывал */
+QLineEdit {{
+    font-size: {font_size_title}pt !important;
+    font-weight: bold !important;
 }}
 """
     

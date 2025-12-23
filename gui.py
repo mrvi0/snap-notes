@@ -514,18 +514,23 @@ class NotesMainWindow(QMainWindow):
             title_label.setMaximumWidth(max_item_width - 20)  # Учитываем отступы layout
             item_layout.addWidget(title_label)
             
-            # Предпросмотр (короткое описание)
+            # Предпросмотр (короткое описание) - максимум 2 строки
             preview = self._strip_markdown_preview(note.markdown_content)
-            # Ограничиваем длину предпросмотра
-            max_preview_length = 50
-            if len(preview) > max_preview_length:
-                preview = preview[:max_preview_length] + "..."
             
             preview_label = QLabel(preview)
             preview_label.setWordWrap(True)
             preview_label.setStyleSheet("color: #666; font-size: 11pt;")
             # Ограничиваем ширину предпросмотра
             preview_label.setMaximumWidth(max_item_width - 20)  # Учитываем отступы layout
+            # Ограничиваем высоту до 2 строк (примерно 2 * line-height)
+            # Используем фиксированную высоту, чтобы текст не наезжал на заголовок
+            from PyQt6.QtCore import QSize
+            font_metrics = preview_label.fontMetrics()
+            line_height = font_metrics.lineSpacing()
+            max_height = line_height * 2 + 4  # 2 строки + небольшой отступ
+            preview_label.setMaximumHeight(max_height)
+            # Обрезаем текст, если он не помещается в 2 строки
+            preview_label.setElideMode(Qt.TextElideMode.ElideRight)
             item_layout.addWidget(preview_label)
             
             # Создаем QListWidgetItem
