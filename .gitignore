@@ -1,0 +1,33 @@
+# База данных
+*.db
+*.sqlite
+*.sqlite3
+
+# Файлы синхронизации
+notes_sync.json
+
+# Настройки
+settings.json
+
+# Логи
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
