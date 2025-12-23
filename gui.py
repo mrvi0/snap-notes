@@ -20,7 +20,10 @@ from settings import Settings
 from themes import get_theme
 from settings_dialog import SettingsDialog
 from sync_settings_dialog import SyncSettingsDialog
-from markdown_utils import convert_plain_to_markdown, convert_markdown_to_plain, apply_markdown_formatting
+from markdown_utils import (
+    convert_plain_to_markdown, convert_markdown_to_plain, apply_markdown_formatting,
+    convert_html_to_markdown, convert_markdown_to_html
+)
 
 logger = logging.getLogger(__name__)
 
@@ -513,11 +516,34 @@ class NotesMainWindow(QMainWindow):
             if note:
                 self.current_note = note
                 self.title_input.setText(note.title)
-                self.content_input.setPlainText(note.content)
                 
                 # Устанавливаем режим Markdown
                 self.is_markdown_mode = note.is_markdown
                 self.markdown_toggle.setChecked(note.is_markdown)
+                
+                # Показываем/скрываем кнопки форматирования
+                if note.is_markdown:
+                    self.bold_btn.hide()
+                    self.italic_btn.hide()
+                    self.strikethrough_btn.hide()
+                    self.header1_btn.hide()
+                    self.header2_btn.hide()
+                    self.list_btn.hide()
+                    self.content_input.setPlainText(note.content)
+                else:
+                    self.bold_btn.show()
+                    self.italic_btn.show()
+                    self.strikethrough_btn.show()
+                    self.header1_btn.show()
+                    self.header2_btn.show()
+                    self.list_btn.show()
+                    # Конвертируем markdown в HTML для отображения (если был markdown)
+                    if note.content:
+                        html_content = convert_markdown_to_html(note.content)
+                        self.content_input.setHtml(html_content)
+                    else:
+                        self.content_input.clear()
+                
                 self.update_markdown_toggle_style()
                 
                 self.info_label.setText(
@@ -555,6 +581,13 @@ class NotesMainWindow(QMainWindow):
         # Сбрасываем режим Markdown
         self.is_markdown_mode = False
         self.markdown_toggle.setChecked(False)
+        # Показываем кнопки форматирования
+        self.bold_btn.show()
+        self.italic_btn.show()
+        self.strikethrough_btn.show()
+        self.header1_btn.show()
+        self.header2_btn.show()
+        self.list_btn.show()
         self.update_markdown_toggle_style()
         
         self.has_unsaved_changes = False
@@ -689,23 +722,49 @@ class NotesMainWindow(QMainWindow):
             self.auto_save_timer.start(1000)
     
     def apply_format(self, format_type: str):
-        """Применяет Markdown форматирование к выделенному тексту."""
-        cursor = self.content_input.textCursor()
-        selection_start = cursor.selectionStart()
-        selection_end = cursor.selectionEnd()
-        
-        current_text = self.content_input.toPlainText()
-        new_text, new_start, new_end = apply_markdown_formatting(
-            current_text, format_type, selection_start, selection_end
-        )
-        
-        self.content_input.setPlainText(new_text)
-        
-        # Восстанавливаем выделение
-        new_cursor = QTextCursor(self.content_input.document())
-        new_cursor.setPosition(new_start)
-        new_cursor.setPosition(new_end, QTextCursor.KeepAnchor)
-        self.content_input.setTextCursor(new_cursor)
+        """Применяет форматирование к выделенному тексту."""
+        if self.is_markdown_mode:
+            # В режиме markdown применяем markdown форматирование
+            cursor = self.content_input.textCursor()
+            selection_start = cursor.selectionStart()
+            selection_end = cursor.selectionEnd()
+            
+            current_text = self.content_input.toPlainText()
+            new_text, new_start, new_end = apply_markdown_formatting(
+                current_text, format_type, selection_start, selection_end
+            )
+            
+            self.content_input.setPlainText(new_text)
+            
+            # Восстанавливаем выделение
+            new_cursor = QTextCursor(self.content_input.document())
+            new_cursor.setPosition(new_start)
+            new_cursor.setPosition(new_end, QTextCursor.KeepAnchor)
+            self.content_input.setTextCursor(new_cursor)
+        else:
+            # В режиме HTML применяем визуальное форматирование
+            cursor = self.content_input.textCursor()
+            format = cursor.charFormat()
+            
+            if format_type == 'bold':
+                format.setFontWeight(QFont.Bold if format.fontWeight() != QFont.Bold else QFont.Normal)
+            elif format_type == 'italic':
+                format.setFontItalic(not format.fontItalic())
+            elif format_type == 'strikethrough':
+                format.setFontStrikeOut(not format.fontStrikeOut())
+            elif format_type == 'header1':
+                format.setFontPointSize(18)
+                format.setFontWeight(QFont.Bold)
+            elif format_type == 'header2':
+                format.setFontPointSize(16)
+                format.setFontWeight(QFont.Bold)
+            elif format_type == 'list':
+                # Для списков нужно добавить маркер в начало строки
+                cursor.insertText("• ")
+                return
+            
+            cursor.setCharFormat(format)
+            self.content_input.setTextCursor(cursor)
         
         self.on_content_changed()
     

@@ -3,6 +3,7 @@
 """
 import re
 from typing import Tuple
+from html import escape, unescape
 
 
 def convert_plain_to_markdown(text: str) -> str:
@@ -141,4 +142,102 @@ def apply_markdown_formatting(text: str, format_type: str, selection_start: int 
         return text, selection_start, selection_end
     
     return new_text, new_start, new_end
+
+
+def convert_html_to_markdown(html: str) -> str:
+    """
+    Конвертирует HTML в Markdown.
+    
+    Args:
+        html: HTML текст
+        
+    Returns:
+        Текст в формате Markdown
+    """
+    if not html:
+        return html
+    
+    # Убираем обертки параграфов
+    html = re.sub(r'<p[^>]*>', '', html)
+    html = re.sub(r'</p>', '\n', html)
+    html = re.sub(r'<br\s*/?>', '\n', html)
+    
+    # Заголовки
+    html = re.sub(r'<h1[^>]*>(.*?)</h1>', r'# \1', html, flags=re.DOTALL)
+    html = re.sub(r'<h2[^>]*>(.*?)</h2>', r'## \1', html, flags=re.DOTALL)
+    html = re.sub(r'<h3[^>]*>(.*?)</h3>', r'### \1', html, flags=re.DOTALL)
+    
+    # Жирный
+    html = re.sub(r'<b[^>]*>(.*?)</b>', r'**\1**', html, flags=re.DOTALL)
+    html = re.sub(r'<strong[^>]*>(.*?)</strong>', r'**\1**', html, flags=re.DOTALL)
+    
+    # Курсив
+    html = re.sub(r'<i[^>]*>(.*?)</i>', r'*\1*', html, flags=re.DOTALL)
+    html = re.sub(r'<em[^>]*>(.*?)</em>', r'*\1*', html, flags=re.DOTALL)
+    
+    # Зачеркнутый
+    html = re.sub(r'<s[^>]*>(.*?)</s>', r'~~\1~~', html, flags=re.DOTALL)
+    html = re.sub(r'<strike[^>]*>(.*?)</strike>', r'~~\1~~', html, flags=re.DOTALL)
+    html = re.sub(r'<del[^>]*>(.*?)</del>', r'~~\1~~', html, flags=re.DOTALL)
+    
+    # Списки
+    html = re.sub(r'<li[^>]*>(.*?)</li>', r'- \1\n', html, flags=re.DOTALL)
+    html = re.sub(r'<ul[^>]*>|</ul>|<ol[^>]*>|</ol>', '', html)
+    
+    # Убираем остальные HTML теги
+    html = re.sub(r'<[^>]+>', '', html)
+    
+    # Декодируем HTML entities
+    html = unescape(html)
+    
+    # Очищаем лишние переносы
+    html = re.sub(r'\n{3,}', '\n\n', html)
+    
+    return html.strip()
+
+
+def convert_markdown_to_html(markdown: str) -> str:
+    """
+    Конвертирует Markdown в HTML.
+    
+    Args:
+        markdown: Текст в формате Markdown
+        
+    Returns:
+        HTML текст
+    """
+    if not markdown:
+        return ""
+    
+    # Экранируем HTML
+    html = escape(markdown)
+    
+    # Заголовки
+    html = re.sub(r'^###\s+(.+)$', r'<h3>\1</h3>', html, flags=re.MULTILINE)
+    html = re.sub(r'^##\s+(.+)$', r'<h2>\1</h2>', html, flags=re.MULTILINE)
+    html = re.sub(r'^#\s+(.+)$', r'<h1>\1</h1>', html, flags=re.MULTILINE)
+    
+    # Жирный
+    html = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', html)
+    html = re.sub(r'__(.+?)__', r'<b>\1</b>', html)
+    
+    # Курсив (после жирного, чтобы не конфликтовать)
+    html = re.sub(r'(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)', r'<i>\1</i>', html)
+    html = re.sub(r'(?<!_)_(?!_)(.+?)(?<!_)_(?!_)', r'<i>\1</i>', html)
+    
+    # Зачеркнутый
+    html = re.sub(r'~~(.+?)~~', r'<s>\1</s>', html)
+    
+    # Списки
+    html = re.sub(r'^[\*\-\+]\s+(.+)$', r'<li>\1</li>', html, flags=re.MULTILINE)
+    html = re.sub(r'(<li>.*?</li>)', r'<ul>\1</ul>', html, flags=re.DOTALL)
+    
+    # Переносы строк
+    html = re.sub(r'\n', '<br/>', html)
+    
+    # Обертываем в параграфы
+    if not html.startswith('<h') and not html.startswith('<ul'):
+        html = f'<p>{html}</p>'
+    
+    return html
 
