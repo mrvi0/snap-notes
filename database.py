@@ -249,17 +249,33 @@ class DatabaseManager:
             True, если обновление успешно, False иначе
         """
         now = datetime.now().isoformat()
+        conn = None
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE notes 
-                SET title = ?, markdown_content = ?, updated_at = ?
-                WHERE id = ?
-            """, (title, markdown_content, now, note_id))
+            
+            # Проверяем, есть ли старая колонка content
+            cursor.execute("PRAGMA table_info(notes)")
+            columns = [col[1] for col in cursor.fetchall()]
+            has_old_content = 'content' in columns
+            
+            if has_old_content:
+                # Если есть старая колонка, обновляем её тоже (для совместимости)
+                cursor.execute("""
+                    UPDATE notes 
+                    SET title = ?, markdown_content = ?, content = ?, updated_at = ?
+                    WHERE id = ?
+                """, (title, markdown_content, markdown_content, now, note_id))
+            else:
+                # Новая схема - только markdown_content
+                cursor.execute("""
+                    UPDATE notes 
+                    SET title = ?, markdown_content = ?, updated_at = ?
+                    WHERE id = ?
+                """, (title, markdown_content, now, note_id))
+            
             success = cursor.rowcount > 0
             conn.commit()
-            conn.close()
             
             if success:
                 logger.info(f"Заметка {note_id} обновлена")
@@ -269,6 +285,9 @@ class DatabaseManager:
         except sqlite3.Error as e:
             logger.error(f"Ошибка при обновлении заметки: {e}")
             raise
+        finally:
+            if conn:
+                conn.close()
     
     def delete_note(self, note_id: int) -> bool:
         """
