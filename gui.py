@@ -173,6 +173,10 @@ class NotesMainWindow(QMainWindow):
         # Список заметок
         self.notes_list = QListWidget()
         self.notes_list.itemClicked.connect(self.on_note_selected)
+        # Отключаем горизонтальный скролл
+        self.notes_list.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        # Устанавливаем режим переноса текста
+        self.notes_list.setWordWrap(True)
         layout.addWidget(self.notes_list)
         
         return panel
@@ -384,7 +388,10 @@ class NotesMainWindow(QMainWindow):
     
     def on_note_selected(self, item: QListWidgetItem):
         """Обрабатывает выбор заметки из списка."""
+        # Получаем ID заметки из данных элемента
         note_id = item.data(Qt.ItemDataRole.UserRole)
+        if note_id is None:
+            return
         note = self.db_manager.get_note(note_id)
         
         if note:
@@ -460,9 +467,20 @@ class NotesMainWindow(QMainWindow):
         """Заполняет список заметок."""
         self.notes_list.clear()
         
+        # Получаем ширину списка для ограничения элементов
+        list_width = self.notes_list.width()
+        if list_width <= 0:
+            # Если список еще не отображен, используем ширину панели
+            list_width = self.notes_list.parent().width() if self.notes_list.parent() else 230
+        
+        # Вычисляем максимальную ширину для элементов (учитываем отступы и скроллбар)
+        max_item_width = max(list_width - 30, 180)  # Минимум 180px
+        
         for note in notes:
             # Создаем кастомный виджет для элемента списка
             item_widget = QWidget()
+            item_widget.setMaximumWidth(max_item_width)
+            
             item_layout = QVBoxLayout(item_widget)
             item_layout.setContentsMargins(10, 8, 10, 8)
             item_layout.setSpacing(4)
@@ -473,6 +491,8 @@ class NotesMainWindow(QMainWindow):
             title_font.setBold(True)
             title_label.setFont(title_font)
             title_label.setWordWrap(True)
+            # Ограничиваем ширину заголовка
+            title_label.setMaximumWidth(max_item_width - 20)  # Учитываем отступы layout
             item_layout.addWidget(title_label)
             
             # Предпросмотр (короткое описание)
@@ -485,10 +505,13 @@ class NotesMainWindow(QMainWindow):
             preview_label = QLabel(preview)
             preview_label.setWordWrap(True)
             preview_label.setStyleSheet("color: #666; font-size: 11pt;")
+            # Ограничиваем ширину предпросмотра
+            preview_label.setMaximumWidth(max_item_width - 20)  # Учитываем отступы layout
             item_layout.addWidget(preview_label)
             
             # Создаем QListWidgetItem
             item = QListWidgetItem()
+            # Устанавливаем размер элемента
             item.setSizeHint(item_widget.sizeHint())
             item.setData(Qt.ItemDataRole.UserRole, note.id)
             
