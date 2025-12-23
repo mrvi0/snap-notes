@@ -52,19 +52,33 @@ class LinkIconTextEdit(QTextEdit):
         self.link_icon = self._create_link_icon()
     
     def _create_link_icon(self) -> QPixmap:
-        """Создает иконку для ссылки."""
+        """Создает иконку для ссылки (открыть в новой вкладке)."""
         pixmap = QPixmap(self.icon_size, self.icon_size)
         pixmap.fill(Qt.GlobalColor.transparent)
         painter = QPainter(pixmap)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
-        # Рисуем простую иконку "открыть в новой вкладке" (стрелка вверх-вправо)
-        painter.setPen(Qt.GlobalColor.blue)
-        painter.setBrush(Qt.GlobalColor.blue)
-        # Рисуем квадрат с диагональю
-        painter.drawLine(2, self.icon_size - 2, self.icon_size - 2, 2)
-        painter.drawLine(self.icon_size - 2, 2, self.icon_size - 2, 6)
-        painter.drawLine(self.icon_size - 2, 2, self.icon_size - 6, 2)
+        # Рисуем иконку "открыть в новой вкладке" (квадрат со стрелкой)
+        # Используем синий цвет для ссылок
+        from PyQt6.QtGui import QColor
+        link_color = QColor("#2196F3")
+        painter.setPen(link_color)
+        painter.setBrush(link_color)
+        
+        # Рисуем квадрат
+        square_size = self.icon_size - 4
+        painter.drawRect(2, 2, square_size, square_size)
+        
+        # Рисуем стрелку (диагональ из левого нижнего в правый верхний угол)
+        painter.setPen(QColor("white"))
+        painter.setBrush(QColor("white"))
+        painter.setPenWidth(2)
+        # Стрелка: линия от (4, icon_size-4) до (icon_size-4, 4)
+        painter.drawLine(4, self.icon_size - 4, self.icon_size - 4, 4)
+        # Наконечник стрелки вверх
+        painter.drawLine(self.icon_size - 4, 4, self.icon_size - 6, 4)
+        painter.drawLine(self.icon_size - 4, 4, self.icon_size - 4, 6)
+        
         painter.end()
         return pixmap
     
