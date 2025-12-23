@@ -297,14 +297,6 @@ class NotesMainWindow(QMainWindow):
         
         return panel
     
-    def _create_separator(self) -> QWidget:
-        """Создает визуальный разделитель в toolbar."""
-        separator = QWidget()
-        separator.setFixedWidth(1)
-        separator.setFixedHeight(30)
-        separator.setStyleSheet("background-color: #ddd;")
-        return separator
-    
     def _create_menu_bar(self):
         """Создает меню приложения."""
         menubar = self.menuBar()
