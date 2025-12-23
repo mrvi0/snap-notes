@@ -480,8 +480,8 @@ QPushButton:pressed {{
     else:
         base_theme = button_style + base_theme
     
-    # Вычисляем размер шрифта для заголовка (примерно на 6pt больше)
-    font_size_title = font_size + 6
+    # Вычисляем размер шрифта для заголовка (примерно на 8pt больше для H1 эффекта)
+    font_size_title = font_size + 8
     
     # Заменяем плейсхолдеры в стилях
     base_theme = base_theme.replace('{button_color}', button_color)
