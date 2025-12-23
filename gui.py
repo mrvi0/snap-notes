@@ -70,9 +70,9 @@ class LinkIconTextEdit(QTextEdit):
         painter.drawRect(2, 2, square_size, square_size)
         
         # Рисуем стрелку (диагональ из левого нижнего в правый верхний угол)
-        painter.setPen(QColor("white"))
+        white_pen = QPen(QColor("white"), 2)
+        painter.setPen(white_pen)
         painter.setBrush(QColor("white"))
-        painter.setPenWidth(2)
         # Стрелка: линия от (4, icon_size-4) до (icon_size-4, 4)
         painter.drawLine(4, self.icon_size - 4, self.icon_size - 4, 4)
         # Наконечник стрелки вверх
