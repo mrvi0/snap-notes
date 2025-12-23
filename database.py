@@ -66,6 +66,7 @@ class DatabaseManager:
         Args:
             title: Заголовок заметки
             content: Содержимое заметки
+            is_markdown: Использовать ли Markdown форматирование
             
         Returns:
             Созданная заметка с присвоенным ID
@@ -162,6 +163,7 @@ class DatabaseManager:
             note_id: ID заметки
             title: Новый заголовок
             content: Новое содержимое
+            is_markdown: Использовать ли Markdown форматирование (None - не менять)
             
         Returns:
             True, если обновление успешно, False иначе
