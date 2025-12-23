@@ -64,6 +64,24 @@ QPushButton#delete_button:hover {
 QPushButton#delete_button:pressed {
     background-color: #b71c1c;
 }
+QPushButton#format_button {
+    background-color: transparent;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 4px;
+    font-size: 11pt;
+}
+QPushButton#format_button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: #777;
+}
+QPushButton#format_button:pressed {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+QWidget#format_toolbar {
+    background-color: #1e1e1e;
+    border-bottom: 1px solid #2a2a2a;
+}
 QListWidget {
     background-color: #f5f5f5;
     border: none;
@@ -247,6 +265,24 @@ QPushButton#delete_button:hover {
 }
 QPushButton#delete_button:pressed {
     background-color: #b71c1c;
+}
+QPushButton#format_button {
+    background-color: transparent;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 4px;
+    font-size: 11pt;
+}
+QPushButton#format_button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: #777;
+}
+QPushButton#format_button:pressed {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+QWidget#format_toolbar {
+    background-color: #1e1e1e;
+    border-bottom: 1px solid #2a2a2a;
 }
 QListWidget {
     background-color: #1e1e1e;

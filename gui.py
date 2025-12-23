@@ -382,7 +382,7 @@ class NotesMainWindow(QMainWindow):
         try:
             if self.current_note:
                 # Обновление существующей заметки
-                if self.db_manager.update_note(self.current_note.id, title or "Без названия", content):
+                if self.db_manager.update_note(self.current_note.id, title or "Без названия", content, self.is_markdown_mode):
                     self.current_note = self.db_manager.get_note(self.current_note.id)
                     if self.current_note:
                         self.info_label.setText(
