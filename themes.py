@@ -78,9 +78,13 @@ QPushButton#format_button:hover {
 QPushButton#format_button:pressed {
     background-color: rgba(255, 255, 255, 0.15);
 }
+QWidget#markdown_bar {
+    background-color: #fafafa;
+    border-bottom: 1px solid #e0e0e0;
+}
 QWidget#format_toolbar {
-    background-color: #1e1e1e;
-    border-bottom: 1px solid #2a2a2a;
+    background-color: #fafafa;
+    border-bottom: 1px solid #e0e0e0;
 }
 QListWidget {
     background-color: #f5f5f5;
@@ -279,6 +283,10 @@ QPushButton#format_button:hover {
 }
 QPushButton#format_button:pressed {
     background-color: rgba(255, 255, 255, 0.15);
+}
+QWidget#markdown_bar {
+    background-color: #1e1e1e;
+    border-bottom: 1px solid #2a2a2a;
 }
 QWidget#format_toolbar {
     background-color: #1e1e1e;
