@@ -647,3 +647,54 @@ class NotesMainWindow(QMainWindow):
             msg_box.setWindowTitle("Ошибка")
             msg_box.setText(f"Ошибка при синхронизации: {str(e)}")
             msg_box.exec()
+    
+    def toggle_markdown_mode(self, checked: bool):
+        """Переключает режим Markdown."""
+        if self.has_unsaved_changes:
+            self.auto_save_timer.stop()
+            self.auto_save_note()
+        
+        current_content = self.content_input.toPlainText()
+        
+        if checked:
+            # Переключаемся на Markdown
+            self.is_markdown_mode = True
+            self.format_toolbar.show()
+            # Конвертируем обычный текст в Markdown
+            if current_content:
+                markdown_content = convert_plain_to_markdown(current_content)
+                self.content_input.setPlainText(markdown_content)
+        else:
+            # Переключаемся на обычный текст
+            self.is_markdown_mode = False
+            self.format_toolbar.hide()
+            # Конвертируем Markdown в обычный текст
+            if current_content:
+                plain_content = convert_markdown_to_plain(current_content)
+                self.content_input.setPlainText(plain_content)
+        
+        # Обновляем заметку в базе данных
+        if self.current_note:
+            self.has_unsaved_changes = True
+            self.auto_save_timer.start(1000)
+    
+    def apply_format(self, format_type: str):
+        """Применяет Markdown форматирование к выделенному тексту."""
+        cursor = self.content_input.textCursor()
+        selection_start = cursor.selectionStart()
+        selection_end = cursor.selectionEnd()
+        
+        current_text = self.content_input.toPlainText()
+        new_text, new_start, new_end = apply_markdown_formatting(
+            current_text, format_type, selection_start, selection_end
+        )
+        
+        self.content_input.setPlainText(new_text)
+        
+        # Восстанавливаем выделение
+        new_cursor = QTextCursor(self.content_input.document())
+        new_cursor.setPosition(new_start)
+        new_cursor.setPosition(new_end, QTextCursor.KeepAnchor)
+        self.content_input.setTextCursor(new_cursor)
+        
+        self.on_content_changed()
