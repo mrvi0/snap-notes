@@ -1,5 +1,4 @@
 PyQt6>=6.5.0
 requests>=2.31.0
-gkeepapi>=0.14.7
 # QMarkdownTextEdit: если требуется, установите вручную из https://github.com/pbek/QMarkdownTextEdit
 # PyQt6 QTextEdit имеет встроенную поддержку Markdown через setMarkdown/toMarkdown

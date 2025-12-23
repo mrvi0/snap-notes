@@ -22,11 +22,8 @@ class Settings:
         self.config_file = config_file
         self.settings: Dict[str, Any] = {
             "theme": "system",  # "light", "dark", "system"
-            "google_keep": {
-                "enabled": False,
-                "credentials_file": "",
-                "sync_interval": 300  # секунды
-            },
+            "button_color": "#4CAF50",  # Цвет кнопок
+            "font_size": 14,  # Размер шрифта в пунктах
             "auto_save": {
                 "enabled": True,
                 "delay": 1000  # миллисекунды

@@ -4,8 +4,8 @@
 import logging
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QComboBox, QLineEdit, QGroupBox, QFormLayout, QMessageBox,
-    QGridLayout
+    QComboBox, QGroupBox, QFormLayout, QMessageBox,
+    QGridLayout, QSpinBox
 )
 from PyQt6.QtGui import QColor
 from PyQt6.QtCore import Qt
@@ -81,28 +81,15 @@ class SettingsDialog(QDialog):
         
         theme_layout.addRow("", color_palette_layout)
         
+        # Размер шрифта
+        self.font_size_spin = QSpinBox()
+        self.font_size_spin.setMinimum(8)
+        self.font_size_spin.setMaximum(24)
+        self.font_size_spin.setSuffix(" pt")
+        theme_layout.addRow("Размер шрифта:", self.font_size_spin)
+        
         theme_group.setLayout(theme_layout)
         layout.addWidget(theme_group)
-        
-        # Настройки синхронизации Google Keep
-        keep_group = QGroupBox("Синхронизация с Google Keep")
-        keep_layout = QFormLayout()
-        
-        self.keep_email_input = QLineEdit()
-        self.keep_email_input.setPlaceholderText("email@gmail.com")
-        keep_layout.addRow("Email:", self.keep_email_input)
-        
-        self.keep_password_input = QLineEdit()
-        self.keep_password_input.setPlaceholderText("Пароль или токен приложения")
-        self.keep_password_input.setEchoMode(QLineEdit.EchoMode.Password)
-        keep_layout.addRow("Пароль:", self.keep_password_input)
-        
-        self.keep_test_btn = QPushButton("Проверить подключение")
-        self.keep_test_btn.clicked.connect(self.test_keep_connection)
-        keep_layout.addRow("", self.keep_test_btn)
-        
-        keep_group.setLayout(keep_layout)
-        layout.addWidget(keep_group)
         
         # Кнопки
         buttons_layout = QHBoxLayout()
@@ -133,9 +120,9 @@ class SettingsDialog(QDialog):
         button_color = self.settings.get("button_color", "#4CAF50")
         self.select_color(button_color, update_settings=False)
         
-        # Загружаем настройки Google Keep (если есть)
-        keep_email = self.settings.get("google_keep.email", "")
-        self.keep_email_input.setText(keep_email)
+        # Загружаем размер шрифта
+        font_size = self.settings.get("font_size", 14)
+        self.font_size_spin.setValue(font_size)
     
     def select_color(self, color_hex: str, update_settings: bool = True):
         """Выбирает цвет кнопок."""
@@ -159,50 +146,6 @@ class SettingsDialog(QDialog):
         if update_settings:
             self.settings.set("button_color", color_hex)
     
-    def test_keep_connection(self):
-        """Проверяет подключение к Google Keep."""
-        email = self.keep_email_input.text().strip()
-        password = self.keep_password_input.text().strip()
-        
-        if not email or not password:
-            msg_box = QMessageBox(self)
-            msg_box.setIcon(QMessageBox.Icon.NoIcon)
-            msg_box.setWindowTitle("Предупреждение")
-            msg_box.setText("Введите email и пароль")
-            msg_box.exec()
-            return
-        
-        try:
-            from google_keep_sync import GoogleKeepSync
-            from database import DatabaseManager
-            
-            db_manager = DatabaseManager()
-            keep_sync = GoogleKeepSync(db_manager)
-            success = keep_sync.login(email, password)
-            
-            if success:
-                msg_box = QMessageBox(self)
-                msg_box.setIcon(QMessageBox.Icon.NoIcon)
-                msg_box.setWindowTitle("Успех")
-                msg_box.setText("Подключение к Google Keep успешно!")
-                msg_box.exec()
-                # Сохраняем настройки
-                self.settings.set("google_keep.email", email)
-                self.settings.set("google_keep.enabled", True)
-            else:
-                msg_box = QMessageBox(self)
-                msg_box.setIcon(QMessageBox.Icon.NoIcon)
-                msg_box.setWindowTitle("Ошибка")
-                msg_box.setText("Не удалось подключиться к Google Keep")
-                msg_box.exec()
-        except Exception as e:
-            logger.error(f"Ошибка при проверке подключения: {e}")
-            msg_box = QMessageBox(self)
-            msg_box.setIcon(QMessageBox.Icon.NoIcon)
-            msg_box.setWindowTitle("Ошибка")
-            msg_box.setText(f"Ошибка: {str(e)}")
-            msg_box.exec()
-    
     def get_theme(self) -> str:
         """Возвращает выбранную тему."""
         index = self.theme_combo.currentIndex()
@@ -213,14 +156,26 @@ class SettingsDialog(QDialog):
         else:
             return "system"
     
-    def get_keep_credentials(self) -> tuple:
-        """Возвращает учетные данные Google Keep."""
-        return (
-            self.keep_email_input.text().strip(),
-            self.keep_password_input.text().strip()
-        )
-    
     def get_button_color(self) -> str:
         """Возвращает выбранный цвет кнопок."""
         return self.selected_color or self.settings.get("button_color", "#4CAF50")
-
+    
+    def get_font_size(self) -> int:
+        """Возвращает выбранный размер шрифта."""
+        return self.font_size_spin.value()
+    
+    def accept(self):
+        """Сохраняет настройки при нажатии OK."""
+        # Сохраняем тему
+        theme = self.get_theme()
+        self.settings.set("theme", theme)
+        
+        # Сохраняем цвет кнопок
+        button_color = self.get_button_color()
+        self.settings.set("button_color", button_color)
+        
+        # Сохраняем размер шрифта
+        font_size = self.get_font_size()
+        self.settings.set("font_size", font_size)
+        
+        super().accept()

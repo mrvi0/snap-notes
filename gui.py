@@ -22,7 +22,6 @@ from sync_manager import SyncManager
 from settings import Settings
 from themes import get_theme
 from settings_dialog import SettingsDialog
-from sync_settings_dialog import SyncSettingsDialog
 from editor import MarkdownEditor, EditorMode
 
 logger = logging.getLogger(__name__)
@@ -344,10 +343,6 @@ class NotesMainWindow(QMainWindow):
         appearance_action = QAction("Внешний вид", self)
         appearance_action.triggered.connect(self.show_settings)
         settings_menu.addAction(appearance_action)
-        
-        sync_settings_action = QAction("Синхронизация", self)
-        sync_settings_action.triggered.connect(self.show_sync_settings)
-        settings_menu.addAction(sync_settings_action)
     
     def toggle_editor_mode(self, checked: bool):
         """
@@ -606,16 +601,19 @@ class NotesMainWindow(QMainWindow):
         """Показывает диалог настроек."""
         dialog = SettingsDialog(self.settings, self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
+            # Сохраняем настройки из диалога
+            theme = dialog.get_theme()
+            button_color = dialog.get_button_color()
+            font_size = dialog.get_font_size()
+            self.settings.set("theme", theme)
+            self.settings.set("button_color", button_color)
+            self.settings.set("font_size", font_size)
             self.apply_theme()
-    
-    def show_sync_settings(self):
-        """Показывает диалог настроек синхронизации."""
-        dialog = SyncSettingsDialog(parent=self, db_manager=self.db_manager)
-        dialog.exec()
     
     def apply_theme(self):
         """Применяет тему к приложению."""
         theme_name = self.settings.get('theme', 'light')
         button_color = self.settings.get('button_color', '#4CAF50')
-        theme_css = get_theme(theme_name, button_color)
+        font_size = self.settings.get('font_size', 14)
+        theme_css = get_theme(theme_name, button_color, font_size)
         self.setStyleSheet(theme_css)

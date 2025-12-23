@@ -161,15 +161,14 @@ QLineEdit, QTextEdit {
     border-radius: 0px;
     padding: 15px;
     color: #212121;
-    font-size: 14pt;
 }
 QLineEdit {
-    font-size: 20pt;
+    font-size: {font_size_title}pt;
     font-weight: 500;
     padding: 20px 30px;
 }
 QTextEdit {
-    font-size: 14pt;
+    font-size: {font_size}pt;
     line-height: 1.6;
     padding: 20px 30px;
 }
@@ -364,15 +363,14 @@ QLineEdit, QTextEdit {
     border-radius: 0px;
     padding: 15px;
     color: #e0e0e0;
-    font-size: 14pt;
 }
 QLineEdit {
-    font-size: 20pt;
+    font-size: {font_size_title}pt;
     font-weight: 500;
     padding: 20px 30px;
 }
 QTextEdit {
-    font-size: 14pt;
+    font-size: {font_size}pt;
     line-height: 1.6;
     padding: 20px 30px;
 }
@@ -413,7 +411,7 @@ QMenu::item:selected {
 """
 
 
-def get_theme(theme_name: str, button_color: str = "#4CAF50") -> str:
+def get_theme(theme_name: str, button_color: str = "#4CAF50", font_size: int = 14) -> str:
     """
     Получает стиль темы.
     
@@ -482,8 +480,26 @@ QPushButton:pressed {{
     else:
         base_theme = button_style + base_theme
     
-    # Заменяем {button_color} в стилях (для границы выбранной заметки)
+    # Вычисляем размер шрифта для заголовка (примерно на 6pt больше)
+    font_size_title = font_size + 6
+    
+    # Заменяем плейсхолдеры в стилях
     base_theme = base_theme.replace('{button_color}', button_color)
+    base_theme = base_theme.replace('{font_size}', str(font_size))
+    base_theme = base_theme.replace('{font_size_title}', str(font_size_title))
+    
+    # Также применяем размер шрифта к другим элементам
+    base_theme += f"""
+QWidget {{
+    font-size: {font_size}pt;
+}}
+QLabel {{
+    font-size: {font_size}pt;
+}}
+QListWidget {{
+    font-size: {font_size}pt;
+}}
+"""
     
     return base_theme
 
