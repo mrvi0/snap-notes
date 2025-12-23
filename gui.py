@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import (
     QFont, QIcon, QTextCursor, QKeyEvent, QAction, QResizeEvent, 
-    QDesktopServices, QPainter, QPixmap, QMouseEvent, QTextCharFormat
+    QDesktopServices, QPainter, QPixmap, QMouseEvent, QTextCharFormat, QPen
 )
 from PyQt6.QtCore import Qt, QTimer, QUrl, QPoint, QRect
 
