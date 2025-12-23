@@ -120,7 +120,7 @@ class DatabaseManager:
                     content=row['content'],
                     created_at=datetime.fromisoformat(row['created_at']),
                     updated_at=datetime.fromisoformat(row['updated_at']),
-                    is_markdown=bool(row.get('is_markdown', 0))
+                    is_markdown=bool(row['is_markdown'] if 'is_markdown' in row.keys() else 0)
                 )
             return None
         except sqlite3.Error as e:
@@ -254,7 +254,7 @@ class DatabaseManager:
                     content=row['content'],
                     created_at=datetime.fromisoformat(row['created_at']),
                     updated_at=datetime.fromisoformat(row['updated_at']),
-                    is_markdown=bool(row.get('is_markdown', 0))
+                    is_markdown=bool(row['is_markdown'] if 'is_markdown' in row.keys() else 0)
                 ))
             return notes
         except sqlite3.Error as e:
