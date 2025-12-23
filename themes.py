@@ -164,7 +164,7 @@ QLineEdit, QTextEdit {
 }
 QLineEdit {
     font-size: {font_size_title}pt;
-    font-weight: 500;
+    font-weight: bold;
     padding: 20px 30px;
 }
 QTextEdit {
@@ -366,7 +366,7 @@ QLineEdit, QTextEdit {
 }
 QLineEdit {
     font-size: {font_size_title}pt;
-    font-weight: 500;
+    font-weight: bold;
     padding: 20px 30px;
 }
 QTextEdit {

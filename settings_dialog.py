@@ -121,7 +121,7 @@ class SettingsDialog(QDialog):
         self.select_color(button_color, update_settings=False)
         
         # Загружаем размер шрифта
-        font_size = self.settings.get("font_size", 14)
+        font_size = self.settings.get("font_size", 12)
         self.font_size_spin.setValue(font_size)
     
     def select_color(self, color_hex: str, update_settings: bool = True):

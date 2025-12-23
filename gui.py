@@ -614,6 +614,6 @@ class NotesMainWindow(QMainWindow):
         """Применяет тему к приложению."""
         theme_name = self.settings.get('theme', 'light')
         button_color = self.settings.get('button_color', '#4CAF50')
-        font_size = self.settings.get('font_size', 14)
+        font_size = self.settings.get('font_size', 12)
         theme_css = get_theme(theme_name, button_color, font_size)
         self.setStyleSheet(theme_css)

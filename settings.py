@@ -23,7 +23,7 @@ class Settings:
         self.settings: Dict[str, Any] = {
             "theme": "system",  # "light", "dark", "system"
             "button_color": "#4CAF50",  # Цвет кнопок
-            "font_size": 14,  # Размер шрифта в пунктах
+            "font_size": 12,  # Размер шрифта в пунктах
             "auto_save": {
                 "enabled": True,
                 "delay": 1000  # миллисекунды
