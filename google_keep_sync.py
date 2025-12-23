@@ -131,13 +131,13 @@ class GoogleKeepSync:
             for local_note in local_notes:
                 if local_note.title not in keep_notes:
                     # Создаем новую заметку в Keep
-                    gnote = self.keep.createNote(local_note.title, local_note.content)
+                    gnote = self.keep.createNote(local_note.title, local_note.markdown_content)
                     synced_count += 1
                 else:
                     # Обновляем существующую
                     gnote = keep_notes[local_note.title]
                     gnote.title = local_note.title
-                    gnote.text = local_note.content
+                    gnote.text = local_note.markdown_content
                     gnote.save()
                     synced_count += 1
             
