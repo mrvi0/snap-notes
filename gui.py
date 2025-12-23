@@ -22,7 +22,7 @@ from settings_dialog import SettingsDialog
 from sync_settings_dialog import SyncSettingsDialog
 from markdown_utils import (
     convert_plain_to_markdown, convert_markdown_to_plain, apply_markdown_formatting,
-    convert_html_to_markdown, convert_markdown_to_html
+    convert_html_to_markdown, convert_markdown_to_html, strip_markdown_and_html
 )
 
 logger = logging.getLogger(__name__)
@@ -457,8 +457,10 @@ class NotesMainWindow(QMainWindow):
                 title = title[:25] + "..."
             
             # Берем первые 25 символов содержимого для превью (короткое описание)
-            preview = note.content[:25].replace('\n', ' ').replace('\r', '') if note.content else ""
-            if len(note.content) > 25:
+            # Убираем markdown и HTML разметку для чистого текста
+            clean_content = strip_markdown_and_html(note.content) if note.content else ""
+            preview = clean_content[:25].replace('\n', ' ').replace('\r', '') if clean_content else ""
+            if len(clean_content) > 25:
                 preview += "..."
             
             # Фиксированная ширина сайдбара (250px) минус отступы и скроллбар
@@ -691,33 +693,52 @@ class NotesMainWindow(QMainWindow):
             self.auto_save_timer.stop()
             self.auto_save_note()
         
-        current_content = self.content_input.toPlainText()
-        
         if checked:
             # Переключаемся на Markdown
             self.is_markdown_mode = True
-            # Конвертируем обычный текст в Markdown
-            if current_content:
-                markdown_content = convert_plain_to_markdown(current_content)
+            # Скрываем кнопки форматирования
+            self.bold_btn.hide()
+            self.italic_btn.hide()
+            self.strikethrough_btn.hide()
+            self.header1_btn.hide()
+            self.header2_btn.hide()
+            self.list_btn.hide()
+            
+            # Конвертируем HTML в Markdown
+            html_content = self.content_input.toHtml()
+            if html_content:
+                markdown_content = convert_html_to_markdown(html_content)
                 self.content_input.setPlainText(markdown_content)
         else:
-            # Переключаемся на обычный текст
+            # Переключаемся на обычный текст (HTML)
             self.is_markdown_mode = False
-            # Конвертируем Markdown в обычный текст и сохраняем
-            if current_content:
-                plain_content = convert_markdown_to_plain(current_content)
-                self.content_input.setPlainText(plain_content)
-                # Сохраняем конвертированный текст сразу
-                if self.current_note:
-                    title = self.title_input.text().strip()
-                    self.db_manager.update_note(
-                        self.current_note.id, 
-                        title or "Без названия", 
-                        plain_content, 
-                        False  # is_markdown = False
-                    )
-                    self.current_note = self.db_manager.get_note(self.current_note.id)
-                    self.load_notes()
+            # Показываем кнопки форматирования
+            self.bold_btn.show()
+            self.italic_btn.show()
+            self.strikethrough_btn.show()
+            self.header1_btn.show()
+            self.header2_btn.show()
+            self.list_btn.show()
+            
+            # Конвертируем Markdown в HTML для визуального отображения
+            markdown_content = self.content_input.toPlainText()
+            if markdown_content:
+                html_content = convert_markdown_to_html(markdown_content)
+                self.content_input.setHtml(html_content)
+            
+            # Сохраняем конвертированный текст сразу
+            if self.current_note:
+                title = self.title_input.text().strip()
+                html_for_storage = self.content_input.toHtml()
+                markdown_for_storage = convert_html_to_markdown(html_for_storage) if html_for_storage else ""
+                self.db_manager.update_note(
+                    self.current_note.id, 
+                    title or "Без названия", 
+                    markdown_for_storage, 
+                    False  # is_markdown = False
+                )
+                self.current_note = self.db_manager.get_note(self.current_note.id)
+                self.load_notes()
         
         # Обновляем стиль кнопки
         self.update_markdown_toggle_style()
