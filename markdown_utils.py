@@ -199,45 +199,31 @@ def convert_html_to_markdown(html: str) -> str:
     html = re.sub(r'<h2[^>]*>(.*?)</h2>', r'## \1', html, flags=re.DOTALL)
     html = re.sub(r'<h3[^>]*>(.*?)</h3>', r'### \1', html, flags=re.DOTALL)
     
-    # Обрабатываем форматирование в правильном порядке
-    # Важно: обрабатываем вложенные теги рекурсивно, начиная с самых внутренних
-    
-    # Функция для рекурсивной обработки вложенных тегов
-    def process_nested_tags(text, max_depth=10):
-        """Рекурсивно обрабатывает вложенные теги форматирования."""
-        if max_depth <= 0:
-            return text
+    # Обрабатываем форматирование итеративно до тех пор, пока есть изменения
+    # Это позволяет обрабатывать вложенные теги любого уровня
+    max_iterations = 20
+    for iteration in range(max_iterations):
+        original_html = html
         
-        changed = True
-        iterations = 0
-        while changed and iterations < 20:  # Ограничиваем количество итераций
-            iterations += 1
-            changed = False
-            original = text
-            
-            # Зачеркнутый (самый внутренний, обрабатываем первым)
-            text = re.sub(r'<span[^>]*style="[^"]*text-decoration:\s*line-through[^"]*"[^>]*>(.*?)</span>', r'~~\1~~', text, flags=re.DOTALL | re.IGNORECASE)
-            text = re.sub(r'<s[^>]*>(.*?)</s>', r'~~\1~~', text, flags=re.DOTALL)
-            text = re.sub(r'<strike[^>]*>(.*?)</strike>', r'~~\1~~', text, flags=re.DOTALL)
-            text = re.sub(r'<del[^>]*>(.*?)</del>', r'~~\1~~', text, flags=re.DOTALL)
-            
-            # Курсив
-            text = re.sub(r'<span[^>]*style="[^"]*font-style:\s*italic[^"]*"[^>]*>(.*?)</span>', r'*\1*', text, flags=re.DOTALL | re.IGNORECASE)
-            text = re.sub(r'<i[^>]*>(.*?)</i>', r'*\1*', text, flags=re.DOTALL)
-            text = re.sub(r'<em[^>]*>(.*?)</em>', r'*\1*', text, flags=re.DOTALL)
-            
-            # Жирный (самый внешний)
-            text = re.sub(r'<span[^>]*style="[^"]*font-weight:\s*(?:600|bold|700|800|900)[^"]*"[^>]*>(.*?)</span>', r'**\1**', text, flags=re.DOTALL | re.IGNORECASE)
-            text = re.sub(r'<b[^>]*>(.*?)</b>', r'**\1**', text, flags=re.DOTALL)
-            text = re.sub(r'<strong[^>]*>(.*?)</strong>', r'**\1**', text, flags=re.DOTALL)
-            
-            if text != original:
-                changed = True
+        # Зачеркнутый (обрабатываем первым, так как обычно самый внутренний)
+        html = re.sub(r'<span[^>]*style="[^"]*text-decoration:\s*line-through[^"]*"[^>]*>(.*?)</span>', r'~~\1~~', html, flags=re.DOTALL | re.IGNORECASE)
+        html = re.sub(r'<s[^>]*>(.*?)</s>', r'~~\1~~', html, flags=re.DOTALL)
+        html = re.sub(r'<strike[^>]*>(.*?)</strike>', r'~~\1~~', html, flags=re.DOTALL)
+        html = re.sub(r'<del[^>]*>(.*?)</del>', r'~~\1~~', html, flags=re.DOTALL)
         
-        return text
-    
-    # Применяем рекурсивную обработку
-    html = process_nested_tags(html)
+        # Курсив
+        html = re.sub(r'<span[^>]*style="[^"]*font-style:\s*italic[^"]*"[^>]*>(.*?)</span>', r'*\1*', html, flags=re.DOTALL | re.IGNORECASE)
+        html = re.sub(r'<i[^>]*>(.*?)</i>', r'*\1*', html, flags=re.DOTALL)
+        html = re.sub(r'<em[^>]*>(.*?)</em>', r'*\1*', html, flags=re.DOTALL)
+        
+        # Жирный
+        html = re.sub(r'<span[^>]*style="[^"]*font-weight:\s*(?:600|bold|700|800|900)[^"]*"[^>]*>(.*?)</span>', r'**\1**', html, flags=re.DOTALL | re.IGNORECASE)
+        html = re.sub(r'<b[^>]*>(.*?)</b>', r'**\1**', html, flags=re.DOTALL)
+        html = re.sub(r'<strong[^>]*>(.*?)</strong>', r'**\1**', html, flags=re.DOTALL)
+        
+        # Если изменений не было, выходим
+        if html == original_html:
+            break
     
     # Списки
     html = re.sub(r'<li[^>]*>(.*?)</li>', r'- \1\n', html, flags=re.DOTALL)
