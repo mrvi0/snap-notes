@@ -14,6 +14,7 @@ class Note:
     content: str
     created_at: datetime
     updated_at: datetime
+    is_markdown: bool = False
     
     def to_dict(self) -> dict:
         """Преобразует заметку в словарь для сериализации."""
@@ -22,7 +23,8 @@ class Note:
             'title': self.title,
             'content': self.content,
             'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
+            'updated_at': self.updated_at.isoformat(),
+            'is_markdown': self.is_markdown
         }
     
     @classmethod
@@ -33,6 +35,7 @@ class Note:
             title=data.get('title', ''),
             content=data.get('content', ''),
             created_at=datetime.fromisoformat(data.get('created_at', datetime.now().isoformat())),
-            updated_at=datetime.fromisoformat(data.get('updated_at', datetime.now().isoformat()))
+            updated_at=datetime.fromisoformat(data.get('updated_at', datetime.now().isoformat())),
+            is_markdown=bool(data.get('is_markdown', False))
         )
 

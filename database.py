@@ -42,9 +42,16 @@ class DatabaseManager:
                     title TEXT NOT NULL,
                     content TEXT NOT NULL,
                     created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
+                    updated_at TEXT NOT NULL,
+                    is_markdown INTEGER DEFAULT 0
                 )
             """)
+            
+            # Добавляем колонку is_markdown если её нет (для существующих БД)
+            try:
+                cursor.execute("ALTER TABLE notes ADD COLUMN is_markdown INTEGER DEFAULT 0")
+            except sqlite3.OperationalError:
+                pass  # Колонка уже существует
             conn.commit()
             conn.close()
             logger.info("База данных инициализирована успешно")
@@ -52,7 +59,7 @@ class DatabaseManager:
             logger.error(f"Ошибка при инициализации базы данных: {e}")
             raise
     
-    def create_note(self, title: str, content: str) -> Note:
+    def create_note(self, title: str, content: str, is_markdown: bool = False) -> Note:
         """
         Создает новую заметку.
         
@@ -68,9 +75,9 @@ class DatabaseManager:
             conn = self._get_connection()
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO notes (title, content, created_at, updated_at)
-                VALUES (?, ?, ?, ?)
-            """, (title, content, now, now))
+                INSERT INTO notes (title, content, created_at, updated_at, is_markdown)
+                VALUES (?, ?, ?, ?, ?)
+            """, (title, content, now, now, 1 if is_markdown else 0))
             note_id = cursor.lastrowid
             conn.commit()
             conn.close()
@@ -81,7 +88,8 @@ class DatabaseManager:
                 title=title,
                 content=content,
                 created_at=datetime.fromisoformat(now),
-                updated_at=datetime.fromisoformat(now)
+                updated_at=datetime.fromisoformat(now),
+                is_markdown=is_markdown
             )
         except sqlite3.Error as e:
             logger.error(f"Ошибка при создании заметки: {e}")
@@ -110,7 +118,8 @@ class DatabaseManager:
                     title=row['title'],
                     content=row['content'],
                     created_at=datetime.fromisoformat(row['created_at']),
-                    updated_at=datetime.fromisoformat(row['updated_at'])
+                    updated_at=datetime.fromisoformat(row['updated_at']),
+                    is_markdown=bool(row.get('is_markdown', 0))
                 )
             return None
         except sqlite3.Error as e:
@@ -145,7 +154,7 @@ class DatabaseManager:
             logger.error(f"Ошибка при получении всех заметок: {e}")
             raise
     
-    def update_note(self, note_id: int, title: str, content: str) -> bool:
+    def update_note(self, note_id: int, title: str, content: str, is_markdown: bool = None) -> bool:
         """
         Обновляет заметку.
         
@@ -161,11 +170,18 @@ class DatabaseManager:
         try:
             conn = self._get_connection()
             cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE notes 
-                SET title = ?, content = ?, updated_at = ?
-                WHERE id = ?
-            """, (title, content, now, note_id))
+            if is_markdown is not None:
+                cursor.execute("""
+                    UPDATE notes 
+                    SET title = ?, content = ?, updated_at = ?, is_markdown = ?
+                    WHERE id = ?
+                """, (title, content, now, 1 if is_markdown else 0, note_id))
+            else:
+                cursor.execute("""
+                    UPDATE notes 
+                    SET title = ?, content = ?, updated_at = ?
+                    WHERE id = ?
+                """, (title, content, now, note_id))
             success = cursor.rowcount > 0
             conn.commit()
             conn.close()
@@ -235,7 +251,8 @@ class DatabaseManager:
                     title=row['title'],
                     content=row['content'],
                     created_at=datetime.fromisoformat(row['created_at']),
-                    updated_at=datetime.fromisoformat(row['updated_at'])
+                    updated_at=datetime.fromisoformat(row['updated_at']),
+                    is_markdown=bool(row.get('is_markdown', 0))
                 ))
             return notes
         except sqlite3.Error as e:
@@ -253,7 +270,7 @@ class DatabaseManager:
             Синхронизированная заметка
         """
         if note.id is None:
-            return self.create_note(note.title, note.content)
+            return self.create_note(note.title, note.content, note.is_markdown)
         else:
             # Проверяем, существует ли заметка
             existing = self.get_note(note.id)
@@ -264,13 +281,14 @@ class DatabaseManager:
                     cursor = conn.cursor()
                     cursor.execute("""
                         UPDATE notes 
-                        SET title = ?, content = ?, created_at = ?, updated_at = ?
+                        SET title = ?, content = ?, created_at = ?, updated_at = ?, is_markdown = ?
                         WHERE id = ?
                     """, (
                         note.title,
                         note.content,
                         note.created_at.isoformat(),
                         note.updated_at.isoformat(),
+                        1 if note.is_markdown else 0,
                         note.id
                     ))
                     conn.commit()
@@ -287,14 +305,15 @@ class DatabaseManager:
                     conn = self._get_connection()
                     cursor = conn.cursor()
                     cursor.execute("""
-                        INSERT OR REPLACE INTO notes (id, title, content, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, ?)
+                        INSERT OR REPLACE INTO notes (id, title, content, created_at, updated_at, is_markdown)
+                        VALUES (?, ?, ?, ?, ?, ?)
                     """, (
                         note.id,
                         note.title,
                         note.content,
                         note.created_at.isoformat(),
-                        note.updated_at.isoformat()
+                        note.updated_at.isoformat(),
+                        1 if note.is_markdown else 0
                     ))
                     conn.commit()
                     conn.close()
