@@ -1,0 +1,226 @@
+"""
+Диалог настроек приложения.
+"""
+import logging
+from PyQt5.QtWidgets import (
+    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
+    QComboBox, QLineEdit, QGroupBox, QFormLayout, QMessageBox,
+    QGridLayout
+)
+from PyQt5.QtGui import QColor
+from PyQt5.QtCore import Qt
+
+from settings import Settings
+from themes import get_theme
+
+logger = logging.getLogger(__name__)
+
+
+class SettingsDialog(QDialog):
+    """Диалог настроек приложения."""
+    
+    def __init__(self, settings: Settings, parent=None):
+        super().__init__(parent)
+        self.settings = settings
+        self.init_ui()
+        self.load_settings()
+    
+    def init_ui(self):
+        """Инициализирует интерфейс диалога."""
+        self.setWindowTitle("Настройки")
+        self.setMinimumWidth(500)
+        
+        layout = QVBoxLayout()
+        
+        # Настройки темы
+        theme_group = QGroupBox("Внешний вид")
+        theme_layout = QFormLayout()
+        
+        self.theme_combo = QComboBox()
+        self.theme_combo.addItems(["Светлая", "Темная", "Системная"])
+        theme_layout.addRow("Тема:", self.theme_combo)
+        
+        # Выбор цвета кнопок
+        color_label = QLabel("Цвет кнопок:")
+        theme_layout.addRow(color_label)
+        
+        # Палитра цветов
+        self.color_buttons = []
+        color_palette_layout = QGridLayout()
+        
+        # Дефолтная палитра цветов
+        default_colors = [
+            ("#4CAF50", "Зеленый"),
+            ("#2196F3", "Синий"),
+            ("#FF9800", "Оранжевый"),
+            ("#F44336", "Красный"),
+            ("#9C27B0", "Фиолетовый"),
+            ("#00BCD4", "Голубой"),
+            ("#FFC107", "Желтый"),
+            ("#795548", "Коричневый"),
+            ("#607D8B", "Серо-синий"),
+            ("#E91E63", "Розовый"),
+        ]
+        
+        self.selected_color = None
+        row = 0
+        col = 0
+        for color_hex, color_name in default_colors:
+            color_btn = QPushButton()
+            color_btn.setFixedSize(40, 40)
+            color_btn.setStyleSheet(f"background-color: {color_hex}; border: 2px solid #ccc; border-radius: 4px;")
+            color_btn.setToolTip(color_name)
+            color_btn.clicked.connect(lambda checked, c=color_hex: self.select_color(c))
+            color_palette_layout.addWidget(color_btn, row, col)
+            self.color_buttons.append((color_btn, color_hex))
+            
+            col += 1
+            if col >= 5:  # 5 цветов в ряд
+                col = 0
+                row += 1
+        
+        theme_layout.addRow("", color_palette_layout)
+        
+        theme_group.setLayout(theme_layout)
+        layout.addWidget(theme_group)
+        
+        # Настройки синхронизации Google Keep
+        keep_group = QGroupBox("Синхронизация с Google Keep")
+        keep_layout = QFormLayout()
+        
+        self.keep_email_input = QLineEdit()
+        self.keep_email_input.setPlaceholderText("email@gmail.com")
+        keep_layout.addRow("Email:", self.keep_email_input)
+        
+        self.keep_password_input = QLineEdit()
+        self.keep_password_input.setPlaceholderText("Пароль или токен приложения")
+        self.keep_password_input.setEchoMode(QLineEdit.Password)
+        keep_layout.addRow("Пароль:", self.keep_password_input)
+        
+        self.keep_test_btn = QPushButton("Проверить подключение")
+        self.keep_test_btn.clicked.connect(self.test_keep_connection)
+        keep_layout.addRow("", self.keep_test_btn)
+        
+        keep_group.setLayout(keep_layout)
+        layout.addWidget(keep_group)
+        
+        # Кнопки
+        buttons_layout = QHBoxLayout()
+        buttons_layout.addStretch()
+        
+        ok_btn = QPushButton("OK")
+        ok_btn.clicked.connect(self.accept)
+        cancel_btn = QPushButton("Отмена")
+        cancel_btn.clicked.connect(self.reject)
+        
+        buttons_layout.addWidget(ok_btn)
+        buttons_layout.addWidget(cancel_btn)
+        
+        layout.addLayout(buttons_layout)
+        self.setLayout(layout)
+    
+    def load_settings(self):
+        """Загружает настройки в форму."""
+        theme = self.settings.get("theme", "system")
+        if theme == "light":
+            self.theme_combo.setCurrentIndex(0)
+        elif theme == "dark":
+            self.theme_combo.setCurrentIndex(1)
+        else:
+            self.theme_combo.setCurrentIndex(2)
+        
+        # Загружаем цвет кнопок
+        button_color = self.settings.get("button_color", "#4CAF50")
+        self.select_color(button_color, update_settings=False)
+        
+        # Загружаем настройки Google Keep (если есть)
+        keep_email = self.settings.get("google_keep.email", "")
+        self.keep_email_input.setText(keep_email)
+    
+    def select_color(self, color_hex: str, update_settings: bool = True):
+        """Выбирает цвет кнопок."""
+        self.selected_color = color_hex
+        
+        # Обновляем визуальное выделение
+        for btn, btn_color in self.color_buttons:
+            if btn_color == color_hex:
+                btn.setStyleSheet(
+                    f"background-color: {btn_color}; "
+                    f"border: 3px solid #000; "
+                    f"border-radius: 4px;"
+                )
+            else:
+                btn.setStyleSheet(
+                    f"background-color: {btn_color}; "
+                    f"border: 2px solid #ccc; "
+                    f"border-radius: 4px;"
+                )
+        
+        if update_settings:
+            self.settings.set("button_color", color_hex)
+    
+    def test_keep_connection(self):
+        """Проверяет подключение к Google Keep."""
+        email = self.keep_email_input.text().strip()
+        password = self.keep_password_input.text().strip()
+        
+        if not email or not password:
+            msg_box = QMessageBox(self)
+            msg_box.setIcon(QMessageBox.NoIcon)
+            msg_box.setWindowTitle("Предупреждение")
+            msg_box.setText("Введите email и пароль")
+            msg_box.exec()
+            return
+        
+        try:
+            from google_keep_sync import GoogleKeepSync
+            from database import DatabaseManager
+            
+            db_manager = DatabaseManager()
+            keep_sync = GoogleKeepSync(db_manager)
+            success = keep_sync.login(email, password)
+            
+            if success:
+                msg_box = QMessageBox(self)
+                msg_box.setIcon(QMessageBox.NoIcon)
+                msg_box.setWindowTitle("Успех")
+                msg_box.setText("Подключение к Google Keep успешно!")
+                msg_box.exec()
+                # Сохраняем настройки
+                self.settings.set("google_keep.email", email)
+                self.settings.set("google_keep.enabled", True)
+            else:
+                msg_box = QMessageBox(self)
+                msg_box.setIcon(QMessageBox.NoIcon)
+                msg_box.setWindowTitle("Ошибка")
+                msg_box.setText("Не удалось подключиться к Google Keep")
+                msg_box.exec()
+        except Exception as e:
+            logger.error(f"Ошибка при проверке подключения: {e}")
+            msg_box = QMessageBox(self)
+            msg_box.setIcon(QMessageBox.NoIcon)
+            msg_box.setWindowTitle("Ошибка")
+            msg_box.setText(f"Ошибка: {str(e)}")
+            msg_box.exec()
+    
+    def get_theme(self) -> str:
+        """Возвращает выбранную тему."""
+        index = self.theme_combo.currentIndex()
+        if index == 0:
+            return "light"
+        elif index == 1:
+            return "dark"
+        else:
+            return "system"
+    
+    def get_keep_credentials(self) -> tuple:
+        """Возвращает учетные данные Google Keep."""
+        return (
+            self.keep_email_input.text().strip(),
+            self.keep_password_input.text().strip()
+        )
+    
+    def get_button_color(self) -> str:
+        """Возвращает выбранный цвет кнопок."""
+        return self.selected_color or self.settings.get("button_color", "#4CAF50")
+
