@@ -530,7 +530,8 @@ class NotesMainWindow(QMainWindow):
             max_height = line_height * 2 + 4  # 2 строки + небольшой отступ
             preview_label.setMaximumHeight(max_height)
             # Обрезаем текст, если он не помещается в 2 строки
-            preview_label.setElideMode(Qt.TextElideMode.ElideRight)
+            # Используем setTextFormat для правильного переноса
+            preview_label.setTextFormat(Qt.TextFormat.PlainText)
             item_layout.addWidget(preview_label)
             
             # Создаем QListWidgetItem
