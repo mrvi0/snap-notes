@@ -249,6 +249,20 @@ class NotesMainWindow(QMainWindow):
         self.content_input = QTextEdit()
         self.content_input.setPlaceholderText("Содержимое заметки...")
         self.content_input.textChanged.connect(self.on_content_changed)
+        # Переопределяем keyPressEvent для обработки Enter в списках
+        original_keyPressEvent = self.content_input.keyPressEvent
+        def custom_keyPressEvent(event: QKeyEvent):
+            if event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
+                cursor = self.content_input.textCursor()
+                current_list = cursor.currentList()
+                if current_list and not self.is_markdown_mode:
+                    # Если находимся в списке, создаем новый элемент списка
+                    cursor.insertBlock()
+                    current_list.add(cursor.block())
+                    self.content_input.setTextCursor(cursor)
+                    return
+            original_keyPressEvent(event)
+        self.content_input.keyPressEvent = custom_keyPressEvent
         right_layout.addWidget(self.content_input, 1)
         
         # Информация о заметке и кнопка удаления
