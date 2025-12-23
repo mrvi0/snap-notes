@@ -206,8 +206,6 @@ class NotesMainWindow(QMainWindow):
         self.italic_btn.clicked.connect(lambda: self.editor.apply_format('italic'))
         toolbar_layout.addWidget(self.italic_btn)
         
-        toolbar_layout.addWidget(self._create_separator())
-        
         self.h1_btn = QPushButton("H1")
         self.h1_btn.setObjectName("format_button")
         self.h1_btn.setToolTip("Заголовок 1")
@@ -225,8 +223,6 @@ class NotesMainWindow(QMainWindow):
         self.h3_btn.setToolTip("Заголовок 3")
         self.h3_btn.clicked.connect(lambda: self.editor.apply_format('header3'))
         toolbar_layout.addWidget(self.h3_btn)
-        
-        toolbar_layout.addWidget(self._create_separator())
         
         self.list_btn = QPushButton("•")
         self.list_btn.setObjectName("format_button")
@@ -473,12 +469,40 @@ class NotesMainWindow(QMainWindow):
         self.notes_list.clear()
         
         for note in notes:
-            item = QListWidgetItem()
-            # Убираем markdown синтаксис для предпросмотра
+            # Создаем кастомный виджет для элемента списка
+            item_widget = QWidget()
+            item_layout = QVBoxLayout(item_widget)
+            item_layout.setContentsMargins(10, 8, 10, 8)
+            item_layout.setSpacing(4)
+            
+            # Заголовок (жирный)
+            title_label = QLabel(note.title)
+            title_font = QFont()
+            title_font.setBold(True)
+            title_label.setFont(title_font)
+            title_label.setWordWrap(True)
+            item_layout.addWidget(title_label)
+            
+            # Предпросмотр (короткое описание)
             preview = self._strip_markdown_preview(note.markdown_content)
-            item.setText(f"{note.title}\n{preview[:40]}...")
+            # Ограничиваем длину предпросмотра
+            max_preview_length = 50
+            if len(preview) > max_preview_length:
+                preview = preview[:max_preview_length] + "..."
+            
+            preview_label = QLabel(preview)
+            preview_label.setWordWrap(True)
+            preview_label.setStyleSheet("color: #666; font-size: 11pt;")
+            item_layout.addWidget(preview_label)
+            
+            # Создаем QListWidgetItem
+            item = QListWidgetItem()
+            item.setSizeHint(item_widget.sizeHint())
             item.setData(Qt.ItemDataRole.UserRole, note.id)
+            
+            # Устанавливаем виджет в элемент списка
             self.notes_list.addItem(item)
+            self.notes_list.setItemWidget(item, item_widget)
     
     def _strip_markdown_preview(self, markdown_text: str) -> str:
         """
