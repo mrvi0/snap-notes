@@ -492,22 +492,6 @@ class NotesMainWindow(QMainWindow):
                 }}
             """)
     
-    def _handle_content_mouse_press(self, event):
-        """Обрабатывает клики мыши в редакторе для открытия ссылок по Ctrl+клик."""
-        # Проверяем, что зажат Ctrl и мы в Visual режиме
-        if (event.modifiers() & Qt.KeyboardModifier.ControlModifier and
-            self.editor.mode == EditorMode.VISUAL):
-            
-            # Проверяем, есть ли ссылка в позиции клика
-            anchor = self.content_input.anchorAt(event.pos())
-            if anchor:
-                # Открываем ссылку в браузере
-                QDesktopServices.openUrl(QUrl(anchor))
-                return
-        
-        # Вызываем оригинальный обработчик для остальных случаев
-        QTextEdit.mousePressEvent(self.content_input, event)
-    
     def on_add_note(self):
         """Создает новую заметку."""
         self.current_note = None
