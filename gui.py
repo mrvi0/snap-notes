@@ -696,3 +696,40 @@ class NotesMainWindow(QMainWindow):
         self.content_input.setTextCursor(new_cursor)
         
         self.on_content_changed()
+    
+    def update_markdown_toggle_style(self):
+        """Обновляет стиль кнопки переключения Markdown в зависимости от состояния."""
+        if self.markdown_toggle.isChecked():
+            self.markdown_toggle.setStyleSheet("""
+                QPushButton#markdown_toggle {
+                    background-color: #4CAF50;
+                    color: white;
+                    border: none;
+                    padding: 6px 12px;
+                    border-radius: 4px;
+                    font-weight: bold;
+                }
+                QPushButton#markdown_toggle:hover {
+                    background-color: #45a049;
+                }
+                QPushButton#markdown_toggle:pressed {
+                    background-color: #3d8b40;
+                }
+            """)
+        else:
+            self.markdown_toggle.setStyleSheet("""
+                QPushButton#markdown_toggle {
+                    background-color: transparent;
+                    color: #666;
+                    border: 1px solid #ddd;
+                    padding: 6px 12px;
+                    border-radius: 4px;
+                }
+                QPushButton#markdown_toggle:hover {
+                    background-color: #f0f0f0;
+                    border-color: #bbb;
+                }
+                QPushButton#markdown_toggle:pressed {
+                    background-color: #e0e0e0;
+                }
+            """)
