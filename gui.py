@@ -470,6 +470,23 @@ class NotesMainWindow(QMainWindow):
         
         self._populate_notes_list(notes)
     
+    def _update_list_items_width(self):
+        """Обновляет ширину всех элементов списка при изменении размера."""
+        list_width = self.notes_list.width()
+        if list_width <= 0:
+            return
+        
+        max_item_width = max(list_width - 30, 180)  # Минимум 180px
+        
+        for i in range(self.notes_list.count()):
+            item = self.notes_list.item(i)
+            item_widget = self.notes_list.itemWidget(item)
+            if item_widget:
+                item_widget.setMaximumWidth(max_item_width)
+                # Обновляем ширину всех QLabel внутри
+                for child in item_widget.findChildren(QLabel):
+                    child.setMaximumWidth(max_item_width - 20)
+    
     def _populate_notes_list(self, notes):
         """Заполняет список заметок."""
         self.notes_list.clear()
