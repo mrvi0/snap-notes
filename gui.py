@@ -13,8 +13,11 @@ from PyQt6.QtWidgets import (
     QTextEdit, QLineEdit, QPushButton, QLabel, QMessageBox, QDialog,
     QDialogButtonBox, QListWidgetItem, QMenuBar, QMenu, QToolBar
 )
-from PyQt6.QtGui import QFont, QIcon, QTextCursor, QKeyEvent, QAction, QResizeEvent, QDesktopServices
-from PyQt6.QtCore import Qt, QTimer, QUrl
+from PyQt6.QtGui import (
+    QFont, QIcon, QTextCursor, QKeyEvent, QAction, QResizeEvent, 
+    QDesktopServices, QPainter, QPixmap, QMouseEvent, QTextCharFormat
+)
+from PyQt6.QtCore import Qt, QTimer, QUrl, QPoint, QRect
 
 from models import Note
 from database import DatabaseManager
@@ -33,6 +36,117 @@ except ImportError:
     # Fallback: используем QTextEdit с поддержкой markdown (PyQt6 имеет setMarkdown/toMarkdown)
     QMarkdownTextEdit = QTextEdit
     logger.warning("QMarkdownTextEdit не найден, используется QTextEdit с поддержкой Markdown")
+
+
+class LinkIconTextEdit(QTextEdit):
+    """QTextEdit с поддержкой иконок ссылок, которые не копируются."""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.link_icons = {}  # {link_url: icon_rect}
+        self.icon_size = 16
+        self.icon_padding = 4
+        self._is_visual_mode = True
+        
+        # Создаем иконку для ссылки (стрелка в новую вкладку)
+        self.link_icon = self._create_link_icon()
+    
+    def _create_link_icon(self) -> QPixmap:
+        """Создает иконку для ссылки."""
+        pixmap = QPixmap(self.icon_size, self.icon_size)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        
+        # Рисуем простую иконку "открыть в новой вкладке" (стрелка вверх-вправо)
+        painter.setPen(Qt.GlobalColor.blue)
+        painter.setBrush(Qt.GlobalColor.blue)
+        # Рисуем квадрат с диагональю
+        painter.drawLine(2, self.icon_size - 2, self.icon_size - 2, 2)
+        painter.drawLine(self.icon_size - 2, 2, self.icon_size - 2, 6)
+        painter.drawLine(self.icon_size - 2, 2, self.icon_size - 6, 2)
+        painter.end()
+        return pixmap
+    
+    def paintEvent(self, event):
+        """Переопределяем отрисовку для добавления иконок ссылок."""
+        super().paintEvent(event)
+        
+        # Отрисовываем иконки только в Visual режиме
+        if not self._is_visual_mode:
+            return
+        
+        painter = QPainter(self.viewport())
+        self.link_icons.clear()
+        
+        # Находим все ссылки в документе
+        document = self.document()
+        cursor = QTextCursor(document)
+        cursor.movePosition(QTextCursor.MoveOperation.Start)
+        
+        # Проходим по всему документу и ищем ссылки
+        processed_positions = set()
+        while not cursor.atEnd():
+            char_format = cursor.charFormat()
+            anchor = char_format.anchorHref()
+            
+            if anchor and cursor.position() not in processed_positions:
+                # Нашли ссылку, получаем её границы
+                start_pos = cursor.position()
+                # Ищем конец ссылки (пока формат не изменится)
+                end_cursor = QTextCursor(cursor)
+                while not end_cursor.atEnd():
+                    pos = end_cursor.position()
+                    if pos in processed_positions:
+                        break
+                    end_char_format = end_cursor.charFormat()
+                    if end_char_format.anchorHref() != anchor:
+                        break
+                    processed_positions.add(pos)
+                    end_cursor.movePosition(QTextCursor.MoveOperation.NextCharacter)
+                
+                end_pos = end_cursor.position()
+                
+                # Получаем прямоугольник для конца ссылки
+                end_cursor.setPosition(end_pos)
+                rect = self.cursorRect(end_cursor)
+                
+                # Позиция иконки справа от ссылки
+                icon_x = rect.right() + self.icon_padding
+                icon_y = rect.top() + (rect.height() - self.icon_size) // 2
+                icon_rect = QRect(icon_x, icon_y, self.icon_size, self.icon_size)
+                
+                # Сохраняем позицию иконки для обработки кликов
+                self.link_icons[anchor] = icon_rect
+                
+                # Рисуем иконку
+                painter.drawPixmap(icon_rect, self.link_icon)
+                
+                # Переходим к следующей позиции после ссылки
+                cursor.setPosition(end_pos)
+            else:
+                processed_positions.add(cursor.position())
+                cursor.movePosition(QTextCursor.MoveOperation.NextCharacter)
+        
+        painter.end()
+    
+    def mousePressEvent(self, event: QMouseEvent):
+        """Обрабатывает клики по иконкам ссылок."""
+        if event.button() == Qt.MouseButton.LeftButton:
+            pos = event.pos()
+            # Проверяем, кликнули ли по иконке
+            for url, icon_rect in self.link_icons.items():
+                if icon_rect.contains(pos):
+                    QDesktopServices.openUrl(QUrl(url))
+                    return
+        
+        super().mousePressEvent(event)
+    
+    def set_visual_mode(self, is_visual: bool):
+        """Устанавливает режим отображения (Visual или Raw)."""
+        self._is_visual_mode = is_visual
+        if is_visual:
+            self.update()  # Перерисовываем для показа иконок
 
 
 class ConflictDialog(QDialog):
@@ -271,14 +385,24 @@ class NotesMainWindow(QMainWindow):
         self.title_input.textChanged.connect(self.on_content_changed)
         layout.addWidget(self.title_input)
         
-        # Редактор Markdown
-        self.content_input = QMarkdownTextEdit()
+        # Редактор Markdown с поддержкой иконок ссылок
+        if QMarkdownTextEdit == QTextEdit:
+            # Используем кастомный QTextEdit с иконками ссылок
+            self.content_input = LinkIconTextEdit()
+        else:
+            # Если есть QMarkdownTextEdit, используем его, но без иконок
+            self.content_input = QMarkdownTextEdit()
+        
         self.content_input.setPlaceholderText("Содержимое заметки...")
         self.content_input.textChanged.connect(self.on_content_changed)
         
         # Инициализируем редактор
         self.editor = MarkdownEditor(self.content_input)
         self.editor.set_mode(EditorMode.VISUAL)
+        
+        # Устанавливаем режим для отображения иконок
+        if hasattr(self.content_input, 'set_visual_mode'):
+            self.content_input.set_visual_mode(True)
         
         layout.addWidget(self.content_input, 1)
         
