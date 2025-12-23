@@ -505,6 +505,15 @@ QLineEdit {{
     font-size: {font_size_title}pt !important;
     font-weight: bold !important;
 }}
+/* Стили для ссылок в QTextEdit */
+QTextEdit a {{
+    color: #2196F3;
+    text-decoration: underline;
+    cursor: pointer;
+}}
+QTextEdit a:hover {{
+    color: #1976D2;
+}}
 """
     
     return base_theme

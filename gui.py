@@ -13,8 +13,8 @@ from PyQt6.QtWidgets import (
     QTextEdit, QLineEdit, QPushButton, QLabel, QMessageBox, QDialog,
     QDialogButtonBox, QListWidgetItem, QMenuBar, QMenu, QToolBar
 )
-from PyQt6.QtGui import QFont, QIcon, QTextCursor, QKeyEvent, QAction, QResizeEvent
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QFont, QIcon, QTextCursor, QKeyEvent, QAction, QResizeEvent, QDesktopServices
+from PyQt6.QtCore import Qt, QTimer, QUrl
 
 from models import Note
 from database import DatabaseManager
@@ -367,6 +367,22 @@ class NotesMainWindow(QMainWindow):
                     font-size: {font_size}pt !important;
                 }}
             """)
+    
+    def _handle_content_mouse_press(self, event):
+        """Обрабатывает клики мыши в редакторе для открытия ссылок по Ctrl+клик."""
+        # Проверяем, что зажат Ctrl и мы в Visual режиме
+        if (event.modifiers() & Qt.KeyboardModifier.ControlModifier and
+            self.editor.mode == EditorMode.VISUAL):
+            
+            # Проверяем, есть ли ссылка в позиции клика
+            anchor = self.content_input.anchorAt(event.pos())
+            if anchor:
+                # Открываем ссылку в браузере
+                QDesktopServices.openUrl(QUrl(anchor))
+                return
+        
+        # Вызываем оригинальный обработчик для остальных случаев
+        QTextEdit.mousePressEvent(self.content_input, event)
     
     def on_add_note(self):
         """Создает новую заметку."""
