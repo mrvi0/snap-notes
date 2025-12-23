@@ -377,7 +377,13 @@ class NotesMainWindow(QMainWindow):
             return
         
         title = self.title_input.text().strip()
-        content = self.content_input.toPlainText().strip()
+        # Получаем содержимое в зависимости от режима
+        if self.is_markdown_mode:
+            content = self.content_input.toPlainText().strip()
+        else:
+            # В режиме HTML получаем HTML и конвертируем в markdown для хранения
+            html_content = self.content_input.toHtml()
+            content = convert_html_to_markdown(html_content) if html_content else ""
         
         # Не сохраняем пустые заметки
         if not title and not content:
