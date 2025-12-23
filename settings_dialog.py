@@ -2,13 +2,13 @@
 Диалог настроек приложения.
 """
 import logging
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QLineEdit, QGroupBox, QFormLayout, QMessageBox,
     QGridLayout
 )
-from PyQt5.QtGui import QColor
-from PyQt5.QtCore import Qt
+from PyQt6.QtGui import QColor
+from PyQt6.QtCore import Qt
 
 from settings import Settings
 from themes import get_theme
@@ -94,7 +94,7 @@ class SettingsDialog(QDialog):
         
         self.keep_password_input = QLineEdit()
         self.keep_password_input.setPlaceholderText("Пароль или токен приложения")
-        self.keep_password_input.setEchoMode(QLineEdit.Password)
+        self.keep_password_input.setEchoMode(QLineEdit.EchoMode.Password)
         keep_layout.addRow("Пароль:", self.keep_password_input)
         
         self.keep_test_btn = QPushButton("Проверить подключение")
@@ -166,7 +166,7 @@ class SettingsDialog(QDialog):
         
         if not email or not password:
             msg_box = QMessageBox(self)
-            msg_box.setIcon(QMessageBox.NoIcon)
+            msg_box.setIcon(QMessageBox.Icon.NoIcon)
             msg_box.setWindowTitle("Предупреждение")
             msg_box.setText("Введите email и пароль")
             msg_box.exec()
@@ -182,7 +182,7 @@ class SettingsDialog(QDialog):
             
             if success:
                 msg_box = QMessageBox(self)
-                msg_box.setIcon(QMessageBox.NoIcon)
+                msg_box.setIcon(QMessageBox.Icon.NoIcon)
                 msg_box.setWindowTitle("Успех")
                 msg_box.setText("Подключение к Google Keep успешно!")
                 msg_box.exec()
@@ -191,14 +191,14 @@ class SettingsDialog(QDialog):
                 self.settings.set("google_keep.enabled", True)
             else:
                 msg_box = QMessageBox(self)
-                msg_box.setIcon(QMessageBox.NoIcon)
+                msg_box.setIcon(QMessageBox.Icon.NoIcon)
                 msg_box.setWindowTitle("Ошибка")
                 msg_box.setText("Не удалось подключиться к Google Keep")
                 msg_box.exec()
         except Exception as e:
             logger.error(f"Ошибка при проверке подключения: {e}")
             msg_box = QMessageBox(self)
-            msg_box.setIcon(QMessageBox.NoIcon)
+            msg_box.setIcon(QMessageBox.Icon.NoIcon)
             msg_box.setWindowTitle("Ошибка")
             msg_box.setText(f"Ошибка: {str(e)}")
             msg_box.exec()

@@ -2,7 +2,7 @@
 Диалог настроек синхронизации с Google Keep.
 """
 import logging
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QLineEdit, QGroupBox, QFormLayout, QMessageBox, QTextEdit
 )
@@ -46,7 +46,7 @@ class SyncSettingsDialog(QDialog):
         
         self.keep_password_input = QLineEdit()
         self.keep_password_input.setPlaceholderText("Пароль или токен приложения")
-        self.keep_password_input.setEchoMode(QLineEdit.Password)
+        self.keep_password_input.setEchoMode(QLineEdit.EchoMode.Password)
         keep_layout.addRow("Пароль/Токен:", self.keep_password_input)
         
         self.keep_test_btn = QPushButton("Проверить подключение")
@@ -79,7 +79,7 @@ class SyncSettingsDialog(QDialog):
         
         if not email or not password:
             msg_box = QMessageBox(self)
-            msg_box.setIcon(QMessageBox.NoIcon)
+            msg_box.setIcon(QMessageBox.Icon.NoIcon)
             msg_box.setWindowTitle("Предупреждение")
             msg_box.setText("Введите email и пароль")
             msg_box.exec()
@@ -96,20 +96,20 @@ class SyncSettingsDialog(QDialog):
             
             if success:
                 msg_box = QMessageBox(self)
-                msg_box.setIcon(QMessageBox.NoIcon)
+                msg_box.setIcon(QMessageBox.Icon.NoIcon)
                 msg_box.setWindowTitle("Успех")
                 msg_box.setText("Подключение к Google Keep успешно!")
                 msg_box.exec()
             else:
                 msg_box = QMessageBox(self)
-                msg_box.setIcon(QMessageBox.NoIcon)
+                msg_box.setIcon(QMessageBox.Icon.NoIcon)
                 msg_box.setWindowTitle("Ошибка")
                 msg_box.setText("Не удалось подключиться к Google Keep")
                 msg_box.exec()
         except Exception as e:
             logger.error(f"Ошибка при проверке подключения: {e}")
             msg_box = QMessageBox(self)
-            msg_box.setIcon(QMessageBox.NoIcon)
+            msg_box.setIcon(QMessageBox.Icon.NoIcon)
             msg_box.setWindowTitle("Ошибка")
             msg_box.setText(f"Ошибка: {str(e)}")
             msg_box.exec()
@@ -125,26 +125,26 @@ class SyncSettingsDialog(QDialog):
             success, conflicts = self.keep_sync.sync_from_keep()
             if success:
                 msg_box = QMessageBox(self)
-                msg_box.setIcon(QMessageBox.NoIcon)
+                msg_box.setIcon(QMessageBox.Icon.NoIcon)
                 msg_box.setWindowTitle("Успех")
                 msg_box.setText("Синхронизация из Google Keep завершена")
                 msg_box.exec()
                 if conflicts:
                     msg_box = QMessageBox(self)
-                    msg_box.setIcon(QMessageBox.NoIcon)
+                    msg_box.setIcon(QMessageBox.Icon.NoIcon)
                     msg_box.setWindowTitle("Конфликты")
                     msg_box.setText(f"Обнаружено конфликтов: {len(conflicts)}")
                     msg_box.exec()
             else:
                 msg_box = QMessageBox(self)
-                msg_box.setIcon(QMessageBox.NoIcon)
+                msg_box.setIcon(QMessageBox.Icon.NoIcon)
                 msg_box.setWindowTitle("Ошибка")
                 msg_box.setText("Ошибка при синхронизации")
                 msg_box.exec()
         except Exception as e:
             logger.error(f"Ошибка при синхронизации: {e}")
             msg_box = QMessageBox(self)
-            msg_box.setIcon(QMessageBox.NoIcon)
+            msg_box.setIcon(QMessageBox.Icon.NoIcon)
             msg_box.setWindowTitle("Ошибка")
             msg_box.setText(f"Ошибка: {str(e)}")
             msg_box.exec()
@@ -160,20 +160,20 @@ class SyncSettingsDialog(QDialog):
             success = self.keep_sync.sync_to_keep()
             if success:
                 msg_box = QMessageBox(self)
-                msg_box.setIcon(QMessageBox.NoIcon)
+                msg_box.setIcon(QMessageBox.Icon.NoIcon)
                 msg_box.setWindowTitle("Успех")
                 msg_box.setText("Синхронизация в Google Keep завершена")
                 msg_box.exec()
             else:
                 msg_box = QMessageBox(self)
-                msg_box.setIcon(QMessageBox.NoIcon)
+                msg_box.setIcon(QMessageBox.Icon.NoIcon)
                 msg_box.setWindowTitle("Ошибка")
                 msg_box.setText("Ошибка при синхронизации")
                 msg_box.exec()
         except Exception as e:
             logger.error(f"Ошибка при синхронизации: {e}")
             msg_box = QMessageBox(self)
-            msg_box.setIcon(QMessageBox.NoIcon)
+            msg_box.setIcon(QMessageBox.Icon.NoIcon)
             msg_box.setWindowTitle("Ошибка")
             msg_box.setText(f"Ошибка: {str(e)}")
             msg_box.exec()
@@ -190,7 +190,7 @@ class SyncSettingsDialog(QDialog):
             success_from, conflicts = self.keep_sync.sync_from_keep()
             if not success_from:
                 msg_box = QMessageBox(self)
-                msg_box.setIcon(QMessageBox.NoIcon)
+                msg_box.setIcon(QMessageBox.Icon.NoIcon)
                 msg_box.setWindowTitle("Ошибка")
                 msg_box.setText("Ошибка при синхронизации из Google Keep")
                 msg_box.exec()
@@ -200,7 +200,7 @@ class SyncSettingsDialog(QDialog):
             success_to = self.keep_sync.sync_to_keep()
             if not success_to:
                 msg_box = QMessageBox(self)
-                msg_box.setIcon(QMessageBox.NoIcon)
+                msg_box.setIcon(QMessageBox.Icon.NoIcon)
                 msg_box.setWindowTitle("Ошибка")
                 msg_box.setText("Ошибка при синхронизации в Google Keep")
                 msg_box.exec()
@@ -209,7 +209,7 @@ class SyncSettingsDialog(QDialog):
             # Уведомляем об успехе
             conflict_msg = f"\nОбнаружено конфликтов: {len(conflicts)}" if conflicts else ""
             msg_box = QMessageBox(self)
-            msg_box.setIcon(QMessageBox.NoIcon)
+            msg_box.setIcon(QMessageBox.Icon.NoIcon)
             msg_box.setWindowTitle("Успех")
             msg_box.setText(f"Синхронизация завершена успешно!{conflict_msg}")
             msg_box.exec()
@@ -220,7 +220,7 @@ class SyncSettingsDialog(QDialog):
         except Exception as e:
             logger.error(f"Ошибка при синхронизации: {e}")
             msg_box = QMessageBox(self)
-            msg_box.setIcon(QMessageBox.NoIcon)
+            msg_box.setIcon(QMessageBox.Icon.NoIcon)
             msg_box.setWindowTitle("Ошибка")
             msg_box.setText(f"Ошибка: {str(e)}")
             msg_box.exec()
