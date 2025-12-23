@@ -241,3 +241,51 @@ def convert_markdown_to_html(markdown: str) -> str:
     
     return html
 
+
+def strip_markdown_and_html(text: str) -> str:
+    """
+    Убирает Markdown разметку и HTML теги, оставляя только чистый текст.
+    
+    Args:
+        text: Текст с Markdown или HTML разметкой
+        
+    Returns:
+        Чистый текст без разметки
+    """
+    if not text:
+        return text
+    
+    # Сначала убираем HTML теги
+    text = re.sub(r'<[^>]+>', '', text)
+    
+    # Убираем HTML entities
+    text = unescape(text)
+    
+    # Убираем Markdown разметку
+    # Заголовки
+    text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
+    
+    # Жирный
+    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)
+    text = re.sub(r'__(.*?)__', r'\1', text)
+    
+    # Курсив
+    text = re.sub(r'(?<!\*)\*(?!\*)(.*?)(?<!\*)\*(?!\*)', r'\1', text)
+    text = re.sub(r'(?<!_)_(?!_)(.*?)(?<!_)_(?!_)', r'\1', text)
+    
+    # Зачеркнутый
+    text = re.sub(r'~~(.*?)~~', r'\1', text)
+    
+    # Код
+    text = re.sub(r'`(.*?)`', r'\1', text)
+    text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
+    
+    # Ссылки
+    text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)
+    
+    # Списки
+    text = re.sub(r'^[\*\-\+]\s+', '', text, flags=re.MULTILINE)
+    text = re.sub(r'^\d+[\.\)]\s+', '', text, flags=re.MULTILINE)
+    
+    return text.strip()
+
