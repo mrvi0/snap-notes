@@ -711,6 +711,8 @@ class NotesMainWindow(QMainWindow):
             html_content = self.content_input.toHtml()
             if html_content:
                 markdown_content = convert_html_to_markdown(html_content)
+                # Очищаем форматирование и устанавливаем plain text
+                self.content_input.clear()
                 self.content_input.setPlainText(markdown_content)
         else:
             # Переключаемся на обычный текст (HTML)
