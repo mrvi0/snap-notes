@@ -518,10 +518,7 @@ class NotesMainWindow(QMainWindow):
                 # Устанавливаем режим Markdown
                 self.is_markdown_mode = note.is_markdown
                 self.markdown_toggle.setChecked(note.is_markdown)
-                if note.is_markdown:
-                    self.format_toolbar.show()
-                else:
-                    self.format_toolbar.hide()
+                self.update_markdown_toggle_style()
                 
                 self.info_label.setText(
                     f"Создано: {note.created_at.strftime('%Y-%m-%d %H:%M')}\n"
