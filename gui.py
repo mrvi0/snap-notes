@@ -404,9 +404,9 @@ class NotesMainWindow(QMainWindow):
                     logger.info("Заметка автоматически сохранена")
             else:
                 # Создание новой заметки
-                        if title or content:
-                            note = self.db_manager.create_note(title or "Без названия", content, self.is_markdown_mode)
-                            self.current_note = note
+                if title or content:
+                    note = self.db_manager.create_note(title or "Без названия", content, self.is_markdown_mode)
+                    self.current_note = note
                     self.load_notes()
                     # НЕ показываем info_label при создании новой заметки
                     self.info_label.hide()
