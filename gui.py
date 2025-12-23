@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import (
     QTextEdit, QLineEdit, QPushButton, QLabel, QMessageBox, QDialog,
     QDialogButtonBox, QListWidgetItem, QMenuBar, QMenu, QToolBar
 )
-from PyQt6.QtGui import QFont, QIcon, QTextCursor, QKeyEvent, QAction
+from PyQt6.QtGui import QFont, QIcon, QTextCursor, QKeyEvent, QAction, QResizeEvent
 from PyQt6.QtCore import Qt, QTimer
 
 from models import Note
@@ -99,6 +99,13 @@ class NotesMainWindow(QMainWindow):
         self.init_ui()
         self.apply_theme()
         self.load_notes()
+    
+    def resizeEvent(self, event: QResizeEvent):
+        """Обрабатывает изменение размера окна."""
+        super().resizeEvent(event)
+        # Обновляем ширину элементов списка при изменении размера окна
+        if hasattr(self, 'notes_list') and self.notes_list.count() > 0:
+            self._update_list_items_width()
     
     def init_ui(self):
         """Инициализирует интерфейс главного окна."""
