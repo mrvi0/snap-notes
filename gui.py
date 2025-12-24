@@ -383,10 +383,10 @@ class NotesMainWindow(QMainWindow):
         toolbar_layout.addStretch()
         
         # Переключатель режимов
-        self.mode_toggle = QPushButton("Visual")
+        self.mode_toggle = QPushButton("Raw")
         self.mode_toggle.setObjectName("format_button")
         self.mode_toggle.setCheckable(True)
-        self.mode_toggle.setChecked(True)  # По умолчанию Visual режим
+        self.mode_toggle.setChecked(False)  # По умолчанию Raw режим
         self.mode_toggle.setToolTip("Переключить режим (Visual/Raw Markdown)")
         self.mode_toggle.clicked.connect(self.toggle_editor_mode)
         toolbar_layout.addWidget(self.mode_toggle)
@@ -417,9 +417,9 @@ class NotesMainWindow(QMainWindow):
         self.editor = MarkdownEditor(self.content_input, is_dark_theme=is_dark)
         # Редактор по умолчанию в RAW режиме
         
-        # Устанавливаем режим для отображения иконок
+        # Устанавливаем режим для отображения иконок (по умолчанию Raw, иконки не показываются)
         if hasattr(self.content_input, 'set_visual_mode'):
-            self.content_input.set_visual_mode(True)
+            self.content_input.set_visual_mode(False)
         
         layout.addWidget(self.content_input, 1)
         
