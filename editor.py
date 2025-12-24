@@ -246,6 +246,84 @@ class MarkdownEditor:
         new_cursor.setPosition(line_start + len(formatted_line))
         self.text_edit.setTextCursor(new_cursor)
     
+    def _markdown_to_html(self, markdown_text: str) -> str:
+        """
+        Конвертирует Markdown в HTML с правильными стилями для кода.
+        
+        Работает как VS Code и другие Markdown визуализаторы:
+        - Inline code: фон только на сам текст с padding
+        - Code blocks: один фон на весь блок
+        """
+        # Определяем цвета в зависимости от темы
+        if self.is_dark_theme:
+            code_bg = "#2a2a2a"
+            code_border = "#444"
+            text_color = "#e0e0e0"
+        else:
+            code_bg = "#f5f5f5"
+            code_border = "#ddd"
+            text_color = "#212121"
+        
+        # Конвертируем Markdown в HTML
+        if self.md:
+            try:
+                html = markdown_lib.markdown(
+                    markdown_text,
+                    extensions=['fenced_code', 'codehilite', 'nl2br']
+                )
+            except:
+                # Fallback на встроенный метод PyQt6
+                self.text_edit.setMarkdown(markdown_text)
+                html = self.text_edit.toHtml()
+        else:
+            # Fallback на встроенный метод PyQt6
+            self.text_edit.setMarkdown(markdown_text)
+            html = self.text_edit.toHtml()
+        
+        # Добавляем inline стили для кода
+        # Заменяем <code> на <code> с inline стилями (только для inline, не внутри pre)
+        code_style = f'background-color: {code_bg}; padding: 2px 4px; border-radius: 3px; font-family: "Courier New", monospace;'
+        
+        # Сначала обрабатываем блоки <pre><code>
+        pre_code_style = f'background-color: {code_bg}; padding: 12px; border-radius: 4px; border-left: 3px solid {code_border}; font-family: "Courier New", monospace; white-space: pre-wrap; overflow-x: auto; display: block;'
+        html = re.sub(
+            r'<pre><code[^>]*>(.*?)</code></pre>',
+            lambda m: f'<pre style="{pre_code_style}"><code>{m.group(1)}</code></pre>',
+            html,
+            flags=re.DOTALL
+        )
+        
+        # Затем обрабатываем inline <code> (не внутри pre)
+        # Находим все <code> которые не внутри <pre>
+        def replace_inline_code(match):
+            # Проверяем, не находится ли этот code внутри pre
+            start = match.start()
+            # Ищем ближайший <pre> перед этим кодом
+            before = html[:start]
+            pre_open_count = before.count('<pre')
+            pre_close_count = before.count('</pre>')
+            if pre_open_count > pre_close_count:
+                # Мы внутри pre, не заменяем
+                return match.group(0)
+            return f'<code style="{code_style}">{match.group(1)}</code>'
+        
+        html = re.sub(
+            r'<code[^>]*>(.*?)</code>',
+            replace_inline_code,
+            html,
+            flags=re.DOTALL
+        )
+        
+        # Обертываем в базовый HTML
+        full_html = f'''<html><head><style>
+        body {{ color: {text_color}; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }}
+        code {{ background-color: {code_bg}; padding: 2px 4px; border-radius: 3px; font-family: "Courier New", monospace; }}
+        pre {{ background-color: {code_bg}; padding: 12px; border-radius: 4px; border-left: 3px solid {code_border}; font-family: "Courier New", monospace; white-space: pre-wrap; overflow-x: auto; }}
+        pre code {{ background-color: transparent; padding: 0; border-radius: 0; }}
+        </style></head><body>{html}</body></html>'''
+        
+        return full_html
+    
     def _apply_code_styling(self) -> None:
         """
         Применяет стили к блокам кода и inline коду программно.
