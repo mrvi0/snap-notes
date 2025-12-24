@@ -25,6 +25,7 @@ from utils import Settings, get_theme
 from settings_dialog import SettingsDialog
 from components import MarkdownEditor, EditorMode
 from ui import LinkIconTextEdit, ConflictDialog
+from ui.google_keep_settings_dialog import GoogleKeepSettingsDialog
 
 logger = logging.getLogger(__name__)
 
@@ -610,13 +611,70 @@ class NotesMainWindow(QMainWindow):
     
     def on_sync(self):
         """Обрабатывает синхронизацию."""
+        # Проверяем, включена ли синхронизация с Google Keep
+        if self.settings.get('google_keep.enabled', False):
+            self._sync_google_keep()
+        else:
+            # Используем стандартную синхронизацию (локальный файл)
+            try:
+                self.sync_manager.sync()
+                QMessageBox.information(self, "Синхронизация", "Синхронизация завершена успешно")
+                self.load_notes()
+            except Exception as e:
+                logger.error(f"Ошибка при синхронизации: {e}")
+                QMessageBox.critical(self, "Ошибка", f"Ошибка при синхронизации: {e}")
+    
+    def _sync_google_keep(self):
+        """Синхронизирует заметки с Google Keep."""
         try:
-            self.sync_manager.sync()
-            QMessageBox.information(self, "Синхронизация", "Синхронизация завершена успешно")
-            self.load_notes()
+            from services.google_keep_sync import GoogleKeepSync
+            
+            email = self.settings.get('google_keep.email', '')
+            password = self.settings.get('google_keep.password', '')
+            downgrade_extended = self.settings.get('google_keep.downgrade_extended', True)
+            
+            if not email or not password:
+                QMessageBox.warning(self, "Ошибка", "Настройки Google Keep не заполнены. Перейдите в Настройки → Синхронизация Google Keep")
+                return
+            
+            # Создаем экземпляр синхронизатора
+            keep_sync = GoogleKeepSync(self.db_manager, email, password)
+            
+            # Выполняем синхронизацию
+            success, conflicts = keep_sync.sync(downgrade_extended)
+            
+            if success:
+                if conflicts:
+                    # Обрабатываем конфликты
+                    self._handle_sync_conflicts(conflicts)
+                else:
+                    QMessageBox.information(self, "Синхронизация", "Синхронизация с Google Keep завершена успешно")
+                self.load_notes()
+            else:
+                QMessageBox.critical(self, "Ошибка", "Не удалось синхронизировать с Google Keep")
+                
+        except ImportError:
+            QMessageBox.critical(self, "Ошибка", "Библиотека gkeepapi не установлена. Установите: pip install gkeepapi")
         except Exception as e:
-            logger.error(f"Ошибка при синхронизации: {e}")
-            QMessageBox.critical(self, "Ошибка", f"Ошибка при синхронизации: {e}")
+            logger.error(f"Ошибка при синхронизации с Google Keep: {e}")
+            QMessageBox.critical(self, "Ошибка", f"Ошибка при синхронизации с Google Keep: {str(e)}")
+    
+    def _handle_sync_conflicts(self, conflicts: List[Tuple[Note, Note, str]]):
+        """Обрабатывает конфликты при синхронизации."""
+        for local_note, remote_note, conflict_type in conflicts:
+            dialog = ConflictDialog(local_note, remote_note, self)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                if dialog.action == "replace":
+                    # Заменяем локальную версию удаленной
+                    self.db_manager.sync_note(remote_note)
+                elif dialog.action == "keep":
+                    # Сохраняем локальную версию
+                    pass  # Локальная версия уже сохранена
+    
+    def show_google_keep_settings(self):
+        """Показывает диалог настроек синхронизации Google Keep."""
+        dialog = GoogleKeepSettingsDialog(self.settings, self)
+        dialog.exec()
     
     def show_settings(self):
         """Показывает диалог настроек."""
