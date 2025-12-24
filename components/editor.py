@@ -311,11 +311,10 @@ class MarkdownEditor:
         pre_style = f'background-color: {code_bg}; padding: 12px; border-radius: 4px; border-left: 3px solid {code_border}; font-family: \'Courier New\', monospace; white-space: pre-wrap; overflow-x: auto; display: block; margin: 0;'
         pre_code_style = 'background-color: transparent; padding: 0; border-radius: 0; display: block;'
         
-        # Сначала обрабатываем блоки <pre><code>
-        # Убираем лишние переносы строк в конце
+        # Сначала обрабатываем блоки <pre><code> с атрибутами или без
         def process_pre_code(match):
             code_content = match.group(1)
-            # Более агрессивная очистка: убираем все пустые строки в начале и конце
+            # Убираем только пустые строки в начале и конце, но сохраняем переносы строк внутри
             lines = code_content.split('\n')
             # Убираем пустые строки в начале
             while lines and not lines[0].strip():
@@ -324,16 +323,19 @@ class MarkdownEditor:
             while lines and not lines[-1].strip():
                 lines.pop()
             code_content = '\n'.join(lines)
-            # Убираем также возможные пробелы и табы в конце последней строки
+            # Убираем только trailing whitespace с каждой строки, но сохраняем переносы строк
             if code_content:
                 lines_final = code_content.split('\n')
                 lines_final = [line.rstrip() for line in lines_final]
                 code_content = '\n'.join(lines_final)
-            # Применяем inline стили напрямую в элементах
-            # Экранируем HTML entities в содержимом кода
+            # Экранируем HTML entities, но сохраняем переносы строк
+            # Заменяем переносы строк на <br> для правильного отображения в HTML
             from html import escape
-            code_content = escape(code_content)
-            return f'<pre style="{pre_style}"><code style="{pre_code_style}">{code_content}</code></pre>'
+            # Экранируем HTML, но заменяем \n на <br> для сохранения переносов
+            code_content_escaped = escape(code_content)
+            code_content_escaped = code_content_escaped.replace('\n', '<br>')
+            return f'<pre style="{pre_style}"><code style="{pre_code_style}">{code_content_escaped}</code></pre>'
+        # Обрабатываем <pre><code> с любыми атрибутами (включая class="language-*")
         html = re.sub(
             r'<pre><code[^>]*>(.*?)</code></pre>',
             process_pre_code,
@@ -357,8 +359,10 @@ class MarkdownEditor:
                 lines_final = [line.rstrip() for line in lines_final]
                 content = '\n'.join(lines_final)
             from html import escape
-            content = escape(content)
-            return f'<pre style="{pre_style}"><code style="{pre_code_style}">{content}</code></pre>'
+            # Сохраняем переносы строк
+            content_escaped = escape(content)
+            content_escaped = content_escaped.replace('\n', '<br>')
+            return f'<pre style="{pre_style}"><code style="{pre_code_style}">{content_escaped}</code></pre>'
         
         html = re.sub(
             r'<pre[^>]*>(.*?)</pre>',
