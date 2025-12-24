@@ -305,17 +305,25 @@ class MarkdownEditor:
         # Добавляем inline стили для кода
         # Заменяем <code> на <code> с inline стилями (только для inline, не внутри pre)
         # Увеличиваем padding для лучшей видимости
-        code_style = f'background-color: {code_bg}; padding: 3px 6px; border-radius: 3px; font-family: "Courier New", monospace; display: inline-block;'
+        code_style = f'background-color: {code_bg} !important; padding: 3px 6px !important; border-radius: 3px; font-family: "Courier New", monospace !important; display: inline-block;'
         
         # Сначала обрабатываем блоки <pre><code>
         # Убираем лишние переносы строк в конце
         def process_pre_code(match):
             code_content = match.group(1)
-            # Убираем переносы строк в начале и конце
-            code_content = code_content.rstrip('\n\r')
+            # Убираем переносы строк в начале и конце, но сохраняем внутренние
+            # Используем более агрессивную очистку
+            lines = code_content.split('\n')
+            # Убираем пустые строки в начале
+            while lines and not lines[0].strip():
+                lines.pop(0)
+            # Убираем пустые строки в конце
+            while lines and not lines[-1].strip():
+                lines.pop()
+            code_content = '\n'.join(lines)
             return f'<pre style="{pre_code_style}"><code>{code_content}</code></pre>'
         
-        pre_code_style = f'background-color: {code_bg}; padding: 12px; border-radius: 4px; border-left: 3px solid {code_border}; font-family: "Courier New", monospace; white-space: pre-wrap; overflow-x: auto; display: block;'
+        pre_code_style = f'background-color: {code_bg}; padding: 12px !important; border-radius: 4px; border-left: 3px solid {code_border}; font-family: "Courier New", monospace !important; white-space: pre-wrap; overflow-x: auto; display: block; margin: 0;'
         html = re.sub(
             r'<pre><code[^>]*>(.*?)</code></pre>',
             process_pre_code,
@@ -348,11 +356,12 @@ class MarkdownEditor:
         )
         
         # Обертываем в базовый HTML
+        # Используем !important для переопределения стилей QTextEdit
         full_html = f'''<html><head><style>
-        body {{ color: {text_color}; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }}
-        code {{ background-color: {code_bg}; padding: 3px 6px; border-radius: 3px; font-family: "Courier New", monospace; display: inline-block; }}
-        pre {{ background-color: {code_bg}; padding: 12px; border-radius: 4px; border-left: 3px solid {code_border}; font-family: "Courier New", monospace; white-space: pre-wrap; overflow-x: auto; margin: 0; }}
-        pre code {{ background-color: transparent; padding: 0; border-radius: 0; display: block; }}
+        body {{ color: {text_color}; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }}
+        code {{ background-color: {code_bg} !important; padding: 3px 6px !important; border-radius: 3px; font-family: "Courier New", monospace !important; display: inline-block !important; }}
+        pre {{ background-color: {code_bg} !important; padding: 12px !important; border-radius: 4px; border-left: 3px solid {code_border} !important; font-family: "Courier New", monospace !important; white-space: pre-wrap; overflow-x: auto; margin: 0 !important; }}
+        pre code {{ background-color: transparent !important; padding: 0 !important; border-radius: 0; display: block !important; }}
         </style></head><body>{html}</body></html>'''
         
         return full_html
