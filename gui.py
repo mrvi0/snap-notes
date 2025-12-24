@@ -641,8 +641,8 @@ class NotesMainWindow(QMainWindow):
         
         # Обновляем стиль кнопки MD в зависимости от режима
         if hasattr(self, 'mode_toggle'):
-            if self.mode_toggle.isChecked():
-                # Visual режим - окрашиваем в выбранный цвет
+            if not self.mode_toggle.isChecked():
+                # Raw режим - окрашиваем в выбранный цвет
                 self.mode_toggle.setStyleSheet(f"""
                     QPushButton#format_button {{
                         background-color: {button_color};
@@ -664,7 +664,7 @@ class NotesMainWindow(QMainWindow):
                     }}
                 """)
             else:
-                # Raw режим - прозрачная кнопка
+                # Visual режим - прозрачная кнопка
                 self.mode_toggle.setStyleSheet("")
         
         # Обновляем тему в редакторе
