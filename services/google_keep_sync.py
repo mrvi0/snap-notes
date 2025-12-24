@@ -25,14 +25,15 @@ logger = logging.getLogger(__name__)
 class GoogleKeepSync:
     """Класс для синхронизации заметок с Google Keep."""
     
-    def __init__(self, db_manager: DatabaseManager, email: str, password: str):
+    def __init__(self, db_manager: DatabaseManager, email: str, password: str, master_token: Optional[str] = None):
         """
         Инициализация синхронизации с Google Keep.
         
         Args:
             db_manager: Менеджер базы данных
             email: Email для входа в Google Keep
-            password: Пароль или токен приложения
+            password: Пароль или токен приложения (может быть None, если используется master_token)
+            master_token: Master token для аутентификации (альтернатива паролю)
         """
         if not HAS_GKEEPAPI:
             raise ImportError("gkeepapi не установлен. Установите: pip install gkeepapi")
@@ -40,6 +41,7 @@ class GoogleKeepSync:
         self.db_manager = db_manager
         self.email = email
         self.password = password
+        self.master_token = master_token
         self.keep = gkeepapi.Keep()
         self._authenticated = False
     
@@ -47,17 +49,35 @@ class GoogleKeepSync:
         """
         Аутентифицируется в Google Keep.
         
-        Использует токен приложения (App Password) вместо обычного пароля.
-        Для получения токена приложения:
-        1. Включите двухфакторную аутентификацию в Google аккаунте
-        2. Перейдите в https://myaccount.google.com/apppasswords
-        3. Создайте токен для приложения "Mail" или "Other"
-        4. Используйте этот 16-символьный токен вместо пароля
+        Пробует несколько методов аутентификации:
+        1. Master token (если предоставлен)
+        2. App Password через authenticate()
+        3. App Password через login() (fallback)
+        
+        Примечание: Google может не принимать app passwords для некоторых аккаунтов.
+        В этом случае рекомендуется использовать master token.
         
         Returns:
             True если аутентификация успешна
         """
         try:
+            # Если есть master token, используем его
+            if self.master_token:
+                logger.info("Попытка аутентификации через master token")
+                try:
+                    self.keep.resume(self.email, self.master_token)
+                    self._authenticated = True
+                    logger.info("Успешная аутентификация в Google Keep через master token")
+                    return True
+                except Exception as token_error:
+                    logger.warning(f"Master token не сработал: {token_error}, пробуем app password")
+            
+            # Если нет master token или он не сработал, пробуем app password
+            if not self.password:
+                logger.error("Нет ни master token, ни пароля для аутентификации")
+                self._authenticated = False
+                return False
+            
             # Убираем все пробелы из токена (Google выдает токен с пробелами, но нужен без них)
             password_clean = self.password.replace(' ', '').strip()
             
@@ -88,10 +108,35 @@ class GoogleKeepSync:
             error_code = e.code if hasattr(e, 'code') else None
             if 'badauthentication' in error_str or 'login' in error_str or 'auth' in error_str:
                 logger.error(f"Ошибка аутентификации в Google Keep: {e}, код: {error_code}")
+                logger.error(
+                    "Возможные причины:\n"
+                    "1. Google больше не принимает app passwords для этого аккаунта\n"
+                    "2. Токен приложения неверный или устарел\n"
+                    "3. Нужно использовать master token (получить через gkeepapi CLI или скрипт)\n"
+                    "4. Требуется OAuth 2.0 аутентификация"
+                )
             else:
                 logger.error(f"Неожиданная ошибка при аутентификации в Google Keep: {e}", exc_info=True)
             self._authenticated = False
             return False
+    
+    def get_master_token(self) -> Optional[str]:
+        """
+        Получает master token после успешной аутентификации.
+        
+        Master token можно использовать для последующих аутентификаций
+        без необходимости вводить пароль.
+        
+        Returns:
+            Master token или None, если не аутентифицирован
+        """
+        if not self._authenticated:
+            return None
+        try:
+            return self.keep.getMasterToken()
+        except Exception as e:
+            logger.error(f"Ошибка при получении master token: {e}")
+            return None
     
     def _markdown_to_keep_text(self, markdown_text: str) -> str:
         """

@@ -54,17 +54,20 @@ class GoogleKeepSettingsDialog(QDialog):
         password_label = QLabel("Токен приложения:")
         password_label.setStyleSheet("font-size: 11pt;")
         self.password_input = QLineEdit()
-        self.password_input.setPlaceholderText("16-символьный токен приложения")
+        self.password_input.setPlaceholderText("16-символьный токен приложения (или master token)")
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_input.setFixedWidth(350)
         self.password_input.setFixedHeight(28)
         self.password_input.setStyleSheet("font-size: 10pt;")
         self.password_input.setToolTip(
-            "Для получения токена приложения:\n"
-            "1. Включите двухфакторную аутентификацию в Google аккаунте\n"
+            "Вариант 1 - Токен приложения:\n"
+            "1. Включите двухфакторную аутентификацию\n"
             "2. Перейдите: https://myaccount.google.com/apppasswords\n"
             "3. Создайте токен для 'Mail' или 'Other'\n"
-            "4. Используйте 16-символьный токен (без пробелов)"
+            "4. Используйте 16-символьный токен (без пробелов)\n\n"
+            "Вариант 2 - Master token:\n"
+            "Если app password не работает, используйте master token.\n"
+            "Получите его через gkeepapi CLI или скрипт."
         )
         keep_layout.addRow(password_label, self.password_input)
         
@@ -151,17 +154,24 @@ class GoogleKeepSettingsDialog(QDialog):
             
             if sync.authenticate():
                 QMessageBox.information(self, "Успех", "Соединение с Google Keep установлено успешно")
+                # Пробуем получить master token для будущего использования
+                master_token = sync.get_master_token()
+                if master_token:
+                    logger.info("Master token получен, можно сохранить для будущих аутентификаций")
             else:
-                QMessageBox.critical(
-                    self, "Ошибка",
+                error_msg = (
                     "Не удалось подключиться к Google Keep.\n\n"
-                    "Убедитесь, что:\n"
-                    "1. Используете токен приложения (не обычный пароль)\n"
-                    "2. Токен состоит из 16 символов (без пробелов)\n"
-                    "3. Включена двухфакторная аутентификация\n\n"
-                    "Как получить токен:\n"
-                    "https://myaccount.google.com/apppasswords"
+                    "Возможные причины:\n"
+                    "1. Google больше не принимает app passwords для вашего аккаунта\n"
+                    "2. Токен приложения неверный или устарел\n"
+                    "3. Требуется использовать master token\n\n"
+                    "Решения:\n"
+                    "1. Попробуйте создать новый токен приложения:\n"
+                    "   https://myaccount.google.com/apppasswords\n"
+                    "2. Используйте master token (получите через gkeepapi CLI)\n"
+                    "3. Проверьте логи приложения для деталей"
                 )
+                QMessageBox.critical(self, "Ошибка", error_msg)
         except ImportError:
             QMessageBox.critical(self, "Ошибка", "Библиотека gkeepapi не установлена.\n\nУстановите: pip install gkeepapi")
         except Exception as e:
