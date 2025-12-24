@@ -483,10 +483,20 @@ QPushButton:pressed {{
     # Вычисляем размер шрифта для заголовка (примерно на 8pt больше для H1 эффекта)
     font_size_title = font_size + 8
     
+    # Определяем цвета для блоков кода в зависимости от темы
+    if theme_name == "dark":
+        code_bg = "#2a2a2a"  # Темный фон для темной темы
+        code_border = "#444"  # Темная граница
+    else:
+        code_bg = "#f5f5f5"  # Светлый фон для светлой темы
+        code_border = "#ddd"  # Светлая граница
+    
     # Заменяем плейсхолдеры в стилях
     base_theme = base_theme.replace('{button_color}', button_color)
     base_theme = base_theme.replace('{font_size}', str(font_size))
     base_theme = base_theme.replace('{font_size_title}', str(font_size_title))
+    base_theme = base_theme.replace('{code_bg}', code_bg)
+    base_theme = base_theme.replace('{code_border}', code_border)
     
     # Также применяем размер шрифта к другим элементам
     # НЕ применяем к QLineEdit, так как у него свой размер (font_size_title)
@@ -513,6 +523,29 @@ QTextEdit a {{
 }}
 QTextEdit a:hover {{
     color: #1976D2;
+}}
+/* Стили для inline кода */
+QTextEdit code {{
+    font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+    background-color: {code_bg};
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: {font_size}pt;
+}}
+/* Стили для блоков кода */
+QTextEdit pre {{
+    font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+    background-color: {code_bg};
+    padding: 12px;
+    border-radius: 4px;
+    border-left: 3px solid {code_border};
+    font-size: {font_size}pt;
+    white-space: pre-wrap;
+}}
+QTextEdit pre code {{
+    background-color: transparent;
+    padding: 0;
+    border-radius: 0;
 }}
 """
     
