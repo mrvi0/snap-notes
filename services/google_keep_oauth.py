@@ -38,41 +38,78 @@ class GoogleKeepOAuth:
         Инициализация OAuth аутентификации.
         
         Args:
-            credentials_file: Путь к файлу с OAuth credentials (опционально, можно использовать встроенные)
+            credentials_file: Путь к файлу с OAuth credentials (обязательно!)
+                              Пользователь должен создать свой credentials файл в Google Cloud Console.
+                              См. README.md для инструкций.
             token_file: Путь к файлу для сохранения токена (по умолчанию: ~/.notes-google-keep/token.json)
         """
         if not HAS_GOOGLE_AUTH:
             raise ImportError("google-auth не установлен. Установите: pip install google-auth google-auth-oauthlib")
         
-        self.credentials_file = credentials_file
+        self.credentials_file = credentials_file or self._get_default_credentials_path()
         self.token_file = token_file or self._get_default_token_path()
         self.creds: Optional[Credentials] = None
         
-        # Создаем директорию для токена, если её нет
+        # Создаем директории, если их нет
         token_dir = Path(self.token_file).parent
         token_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Проверяем наличие credentials файла
+        if not os.path.exists(self.credentials_file):
+            raise FileNotFoundError(
+                f"Файл OAuth credentials не найден: {self.credentials_file}\n\n"
+                "Создайте OAuth 2.0 credentials в Google Cloud Console:\n"
+                "1. Перейдите: https://console.cloud.google.com/apis/credentials\n"
+                "2. Создайте новый проект (или выберите существующий)\n"
+                "3. Создайте OAuth 2.0 Client ID для 'Desktop app'\n"
+                "4. Скачайте credentials и сохраните как 'credentials.json'\n"
+                "5. Поместите файл в: ~/.notes-google-keep/credentials.json\n\n"
+                "См. README.md для подробных инструкций."
+            )
     
     def _get_default_token_path(self) -> str:
         """Возвращает путь к файлу токена по умолчанию."""
         home = Path.home()
         return str(home / ".notes-google-keep" / "token.json")
     
-    def _get_client_config(self) -> Dict[str, Any]:
+    def _get_default_credentials_path(self) -> str:
+        """Возвращает путь к файлу credentials по умолчанию."""
+        home = Path.home()
+        return str(home / ".notes-google-keep" / "credentials.json")
+    
+    def _load_client_config(self) -> Dict[str, Any]:
         """
-        Возвращает конфигурацию OAuth клиента.
+        Загружает конфигурацию OAuth клиента из файла.
         
-        Использует встроенную конфигурацию для desktop приложения.
+        Returns:
+            Словарь с конфигурацией OAuth клиента
         """
-        return {
-            "installed": {
-                "client_id": CLIENT_ID,
-                "client_secret": CLIENT_SECRET,
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token",
-                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-                "redirect_uris": ["http://localhost"]
-            }
-        }
+        try:
+            with open(self.credentials_file, 'r') as f:
+                config = json.load(f)
+            
+            # Проверяем формат файла
+            if 'installed' in config:
+                return config
+            elif 'web' in config:
+                # Если это web credentials, конвертируем в installed формат
+                web_config = config['web']
+                return {
+                    "installed": {
+                        "client_id": web_config.get('client_id'),
+                        "client_secret": web_config.get('client_secret'),
+                        "auth_uri": web_config.get('auth_uri', 'https://accounts.google.com/o/oauth2/auth'),
+                        "token_uri": web_config.get('token_uri', 'https://oauth2.googleapis.com/token'),
+                        "auth_provider_x509_cert_url": web_config.get('auth_provider_x509_cert_url', 'https://www.googleapis.com/oauth2/v1/certs'),
+                        "redirect_uris": ["http://localhost"]
+                    }
+                }
+            else:
+                raise ValueError("Неверный формат credentials файла. Ожидается 'installed' или 'web' секция.")
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Ошибка при чтении credentials файла (неверный JSON): {e}")
+        except Exception as e:
+            raise ValueError(f"Ошибка при загрузке credentials файла: {e}")
     
     def authenticate(self, parent_widget=None) -> bool:
         """
@@ -99,8 +136,9 @@ class GoogleKeepOAuth:
                 else:
                     # Запрашиваем новый токен
                     logger.info("Запрос нового OAuth токена")
+                    client_config = self._load_client_config()
                     flow = InstalledAppFlow.from_client_config(
-                        self._get_client_config(),
+                        client_config,
                         SCOPES
                     )
                     # Запускаем OAuth flow (откроется браузер)

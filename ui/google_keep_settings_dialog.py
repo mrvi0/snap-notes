@@ -42,9 +42,13 @@ class GoogleKeepSettingsDialog(QDialog):
         
         # Информация об OAuth
         info_label = QLabel(
-            "Синхронизация использует OAuth 2.0 для безопасной авторизации.\n"
+            "Синхронизация использует OAuth 2.0 для безопасной авторизации.\n\n"
+            "Перед использованием необходимо:\n"
+            "1. Создать OAuth credentials в Google Cloud Console\n"
+            "2. Сохранить credentials.json в ~/.notes-google-keep/\n\n"
             "При первом подключении откроется браузер для авторизации.\n"
-            "Токен будет сохранен локально для последующих использований."
+            "Токен будет сохранен локально для последующих использований.\n\n"
+            "См. README.md для подробных инструкций."
         )
         info_label.setWordWrap(True)
         info_label.setStyleSheet("font-size: 10pt; color: #666; padding: 10px;")

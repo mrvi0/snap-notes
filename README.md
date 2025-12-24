@@ -80,34 +80,95 @@ python3 main.py
 
 ## Синхронизация с Google Keep
 
-Приложение поддерживает синхронизацию заметок с Google Keep.
+Приложение поддерживает синхронизацию заметок с Google Keep через **OAuth 2.0**.
 
-### Настройка аутентификации
+### Настройка OAuth 2.0 credentials
 
-Для синхронизации с Google Keep необходимо использовать **токен приложения** (App Password), а не обычный пароль.
+**Важно:** Для безопасности и приватности каждый пользователь должен создать свои собственные OAuth credentials в Google Cloud Console. Это гарантирует, что только вы имеете доступ к своим данным.
 
-#### Как получить токен приложения:
+#### Шаг 1: Создание OAuth credentials в Google Cloud Console
 
-1. **Включите двухфакторную аутентификацию** в вашем Google аккаунте:
-   - Перейдите в [Настройки безопасности Google](https://myaccount.google.com/security)
-   - Включите двухфакторную аутентификацию, если она еще не включена
+1. **Перейдите в Google Cloud Console**:
+   - Откройте [Google Cloud Console](https://console.cloud.google.com/)
+   - Войдите в свой Google аккаунт
 
-2. **Создайте токен приложения**:
-   - Перейдите на страницу [Токены приложений](https://myaccount.google.com/apppasswords)
-   - Выберите приложение: "Mail" или "Other (Custom name)"
+2. **Создайте новый проект** (или выберите существующий):
+   - Нажмите на выпадающий список проектов вверху
+   - Нажмите "New Project"
+   - Введите имя проекта (например, "Notes App")
+   - Нажмите "Create"
+
+3. **Включите Google Keep API**:
+   - Перейдите в [API Library](https://console.cloud.google.com/apis/library)
+   - Найдите "Google Keep API" (если доступен) или используйте общий Google API
+   - Нажмите "Enable"
+
+4. **Создайте OAuth 2.0 Client ID**:
+   - Перейдите в [Credentials](https://console.cloud.google.com/apis/credentials)
+   - Нажмите "Create Credentials" → "OAuth client ID"
+   - Если появится запрос, настройте OAuth consent screen:
+     - Выберите "External" (для личного использования)
+     - Заполните обязательные поля (App name, User support email)
+     - Добавьте свой email в "Developer contact information"
+     - Нажмите "Save and Continue"
+     - В "Scopes" нажмите "Add or Remove Scopes"
+     - Найдите и добавьте: `https://www.googleapis.com/auth/keep` (если доступен)
+     - Или используйте: `https://www.googleapis.com/auth/drive` (для общего доступа)
+     - Нажмите "Save and Continue"
+     - В "Test users" добавьте свой email
+     - Нажмите "Save and Continue"
+   - Выберите тип приложения: **"Desktop app"**
    - Введите имя (например, "Notes App")
-   - Нажмите "Создать"
-   - Google покажет 16-символьный токен (например: `abcd efgh ijkl mnop`)
+   - Нажмите "Create"
 
-3. **Используйте токен в приложении**:
-   - В настройках синхронизации Google Keep введите ваш email
-   - В поле "Токен приложения" введите 16-символьный токен **без пробелов** (например: `abcdefghijklmnop`)
-   - Нажмите "Тест соединения" для проверки
+5. **Скачайте credentials**:
+   - После создания вы увидите Client ID и Client Secret
+   - Нажмите на иконку скачивания (Download JSON)
+   - Сохраните файл как `credentials.json`
 
-**Важно:** 
-- Используйте токен приложения, а не обычный пароль
-- Токен состоит из 16 символов (без пробелов)
-- Если токен не работает, создайте новый
+#### Шаг 2: Установка credentials в приложении
+
+1. **Создайте директорию для конфигурации**:
+   ```bash
+   mkdir -p ~/.notes-google-keep
+   ```
+
+2. **Скопируйте credentials файл**:
+   ```bash
+   cp ~/Downloads/credentials.json ~/.notes-google-keep/credentials.json
+   ```
+   
+   Или вручную переместите скачанный файл в `~/.notes-google-keep/credentials.json`
+
+3. **Проверьте формат файла**:
+   Файл должен содержать структуру вида:
+   ```json
+   {
+     "installed": {
+       "client_id": "YOUR_CLIENT_ID.apps.googleusercontent.com",
+       "client_secret": "YOUR_CLIENT_SECRET",
+       ...
+     }
+   }
+   ```
+   
+   Если файл содержит секцию `"web"` вместо `"installed"`, приложение автоматически конвертирует его.
+
+#### Шаг 3: Первая авторизация
+
+1. Откройте приложение
+2. Перейдите в "Настройки" → "Синхронизация Google Keep"
+3. Включите синхронизацию
+4. Нажмите "Тест соединения"
+5. Откроется браузер для авторизации
+6. Разрешите доступ к Google Keep
+7. Токен будет сохранен локально в `~/.notes-google-keep/token.json`
+
+**Безопасность:**
+- Credentials файл хранится только на вашем компьютере
+- Токен доступа также хранится только локально
+- Никакие данные не передаются разработчикам приложения
+- Вы полностью контролируете свои OAuth credentials
 
 ## Структура проекта
 
