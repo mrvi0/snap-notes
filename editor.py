@@ -5,12 +5,14 @@
 - Visual Markdown mode: визуальное форматирование через toolbar
 - Raw Markdown mode: чистый markdown-текст
 
-Markdown - единственный канонический формат, HTML не используется.
+Markdown - единственный канонический формат хранения.
+HTML используется только для визуализации в Visual режиме.
 """
 import logging
 from typing import Optional
 from enum import Enum
 import html as html_module
+import markdown as markdown_lib
 
 from PyQt6.QtWidgets import QTextEdit
 from PyQt6.QtGui import QTextCursor, QTextCharFormat, QTextBlockFormat, QFont, QColor
