@@ -87,6 +87,8 @@ class GoogleKeepSettingsDialog(QDialog):
         
         # Подключаем сигналы
         self.enabled_checkbox.toggled.connect(self.on_enabled_changed)
+        self.email_input.textChanged.connect(self._update_test_button_state)
+        self.password_input.textChanged.connect(self._update_test_button_state)
     
     def _update_test_button_state(self):
         """Обновляет состояние кнопки теста соединения."""
