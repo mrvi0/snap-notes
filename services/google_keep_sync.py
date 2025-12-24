@@ -62,54 +62,24 @@ class GoogleKeepSync:
     
     def _markdown_to_keep_text(self, markdown_text: str, downgrade_extended: bool = False) -> str:
         """
-        Конвертирует Markdown в простой текст для Google Keep.
+        Возвращает Markdown текст для Google Keep без конвертации.
         
-        Google Keep не поддерживает Markdown, поэтому конвертируем в plain text.
-        Если есть расширенный Markdown, можно понизить до safe-уровня или предупредить.
+        Google Keep может хранить Markdown текст как есть, поэтому не конвертируем.
+        Если требуется, можно понизить расширенный Markdown до safe-уровня.
         
         Args:
             markdown_text: Текст в формате Markdown
             downgrade_extended: Понижать ли расширенный markdown до safe-уровня
             
         Returns:
-            Plain text для Google Keep
+            Markdown текст для Google Keep (без изменений или пониженный до safe-уровня)
         """
         if downgrade_extended and MarkdownLevel.contains_extended_markdown(markdown_text):
             markdown_text = MarkdownLevel.downgrade_to_safe(markdown_text)
             logger.info("Markdown понижен до safe-уровня для Google Keep")
         
-        # Простая конвертация Markdown в plain text
-        import re
-        
-        # Убираем заголовки (оставляем только текст)
-        text = re.sub(r'^#{1,6}\s+(.+)$', r'\1', markdown_text, flags=re.MULTILINE)
-        
-        # Убираем жирный (**text** -> text)
-        text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
-        
-        # Убираем курсив (*text* -> text)
-        text = re.sub(r'\*([^*]+)\*', r'\1', text)
-        
-        # Убираем зачеркнутый (~~text~~ -> text)
-        text = re.sub(r'~~([^~]+)~~', r'\1', text)
-        
-        # Убираем списки (оставляем только текст с отступом)
-        text = re.sub(r'^\s*[-*+]\s+', '', text, flags=re.MULTILINE)
-        text = re.sub(r'^\s*\d+\.\s+', '', text, flags=re.MULTILINE)
-        
-        # Убираем цитаты (оставляем только текст)
-        text = re.sub(r'^>\s+', '', text, flags=re.MULTILINE)
-        
-        # Убираем inline код (оставляем только текст)
-        text = re.sub(r'`([^`]+)`', r'\1', text)
-        
-        # Убираем ссылки (оставляем только текст)
-        text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)
-        
-        # Убираем изображения (оставляем только alt-текст)
-        text = re.sub(r'!\[([^\]]*)\]\([^\)]+\)', r'\1', text)
-        
-        return text.strip()
+        # Возвращаем Markdown как есть, без конвертации в plain text
+        return markdown_text
     
     def _keep_text_to_markdown(self, keep_text: str) -> str:
         """
