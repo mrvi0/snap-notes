@@ -302,11 +302,11 @@ class MarkdownEditor:
             self.text_edit.setMarkdown(markdown_text)
             html = self.text_edit.toHtml()
         
-        # Добавляем inline стили для кода
-        # Заменяем <code> на <code> с inline стилями (только для inline, не внутри pre)
-        # Увеличиваем padding для лучшей видимости
-        # ВАЖНО: используем inline стили напрямую, так как QTextEdit может игнорировать CSS из <style>
-        code_style = f'background-color: {code_bg}; padding: 3px 6px; border-radius: 3px; font-family: \'Courier New\', monospace; display: inline-block;'
+        # ВАЖНО: QTextEdit может игнорировать CSS из <style>, поэтому применяем ВСЕ стили напрямую в inline стилях
+        # Определяем стили ДО использования в функциях
+        inline_code_style = f'background-color: {code_bg}; padding: 3px 6px; border-radius: 3px; font-family: \'Courier New\', monospace; display: inline-block;'
+        pre_style = f'background-color: {code_bg}; padding: 12px; border-radius: 4px; border-left: 3px solid {code_border}; font-family: \'Courier New\', monospace; white-space: pre-wrap; overflow-x: auto; display: block; margin: 0;'
+        pre_code_style = 'background-color: transparent; padding: 0; border-radius: 0; display: block;'
         
         # Сначала обрабатываем блоки <pre><code>
         # Убираем лишние переносы строк в конце
@@ -326,9 +326,8 @@ class MarkdownEditor:
                 lines_final = code_content.split('\n')
                 lines_final = [line.rstrip() for line in lines_final]
                 code_content = '\n'.join(lines_final)
-            return f'<pre style="{pre_code_style}"><code>{code_content}</code></pre>'
-        
-        pre_code_style = f'background-color: {code_bg}; padding: 12px !important; border-radius: 4px; border-left: 3px solid {code_border}; font-family: "Courier New", monospace !important; white-space: pre-wrap; overflow-x: auto; display: block; margin: 0;'
+            # Применяем inline стили напрямую в элементах
+            return f'<pre style="{pre_style}"><code style="{pre_code_style}">{code_content}</code></pre>'
         html = re.sub(
             r'<pre><code[^>]*>(.*?)</code></pre>',
             process_pre_code,
