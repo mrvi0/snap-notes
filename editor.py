@@ -83,10 +83,10 @@ class MarkdownEditor:
             # В визуальном режиме рендерим markdown
             # PyQt6 QTextEdit имеет встроенный метод setMarkdown
             self.text_edit.setMarkdown(current_markdown)
-            # Применяем стили к блокам кода и inline коду программно
-            # Используем QTimer для отложенного применения, так как setMarkdown асинхронный
-            from PyQt6.QtCore import QTimer
-            QTimer.singleShot(10, self._apply_code_styling)
+            # Временно отключаем автоматическую стилизацию кода, так как она вызывает проблемы
+            # TODO: Реализовать более точный метод стилизации
+            # from PyQt6.QtCore import QTimer
+            # QTimer.singleShot(10, self._apply_code_styling)
         else:
             # В raw режиме показываем чистый markdown-текст
             # Сбрасываем все форматирование, чтобы текст был обычным
@@ -132,9 +132,10 @@ class MarkdownEditor:
         if self.mode == EditorMode.VISUAL:
             # PyQt6 QTextEdit имеет встроенный метод setMarkdown
             self.text_edit.setMarkdown(markdown_text)
-            # Применяем стили к блокам кода и inline коду программно
-            from PyQt6.QtCore import QTimer
-            QTimer.singleShot(10, self._apply_code_styling)
+            # Временно отключаем автоматическую стилизацию кода, так как она вызывает проблемы
+            # TODO: Реализовать более точный метод стилизации
+            # from PyQt6.QtCore import QTimer
+            # QTimer.singleShot(10, self._apply_code_styling)
         else:
             # В RAW режиме устанавливаем как plain text и сбрасываем форматирование
             self.text_edit.setPlainText(markdown_text)
