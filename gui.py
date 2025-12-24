@@ -415,7 +415,7 @@ class NotesMainWindow(QMainWindow):
         theme_name = self.settings.get('theme', 'light')
         is_dark = (theme_name == 'dark')
         self.editor = MarkdownEditor(self.content_input, is_dark_theme=is_dark)
-        self.editor.set_mode(EditorMode.VISUAL)
+        # Редактор по умолчанию в RAW режиме
         
         # Устанавливаем режим для отображения иконок
         if hasattr(self.content_input, 'set_visual_mode'):
