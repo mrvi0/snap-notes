@@ -304,13 +304,21 @@ class MarkdownEditor:
         
         # Добавляем inline стили для кода
         # Заменяем <code> на <code> с inline стилями (только для inline, не внутри pre)
-        code_style = f'background-color: {code_bg}; padding: 2px 4px; border-radius: 3px; font-family: "Courier New", monospace;'
+        # Увеличиваем padding для лучшей видимости
+        code_style = f'background-color: {code_bg}; padding: 3px 6px; border-radius: 3px; font-family: "Courier New", monospace; display: inline-block;'
         
         # Сначала обрабатываем блоки <pre><code>
+        # Убираем лишние переносы строк в конце
+        def process_pre_code(match):
+            code_content = match.group(1)
+            # Убираем переносы строк в начале и конце
+            code_content = code_content.rstrip('\n\r')
+            return f'<pre style="{pre_code_style}"><code>{code_content}</code></pre>'
+        
         pre_code_style = f'background-color: {code_bg}; padding: 12px; border-radius: 4px; border-left: 3px solid {code_border}; font-family: "Courier New", monospace; white-space: pre-wrap; overflow-x: auto; display: block;'
         html = re.sub(
             r'<pre><code[^>]*>(.*?)</code></pre>',
-            lambda m: f'<pre style="{pre_code_style}"><code>{m.group(1)}</code></pre>',
+            process_pre_code,
             html,
             flags=re.DOTALL
         )
@@ -339,9 +347,9 @@ class MarkdownEditor:
         # Обертываем в базовый HTML
         full_html = f'''<html><head><style>
         body {{ color: {text_color}; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }}
-        code {{ background-color: {code_bg}; padding: 2px 4px; border-radius: 3px; font-family: "Courier New", monospace; }}
-        pre {{ background-color: {code_bg}; padding: 12px; border-radius: 4px; border-left: 3px solid {code_border}; font-family: "Courier New", monospace; white-space: pre-wrap; overflow-x: auto; }}
-        pre code {{ background-color: transparent; padding: 0; border-radius: 0; }}
+        code {{ background-color: {code_bg}; padding: 3px 6px; border-radius: 3px; font-family: "Courier New", monospace; display: inline-block; }}
+        pre {{ background-color: {code_bg}; padding: 12px; border-radius: 4px; border-left: 3px solid {code_border}; font-family: "Courier New", monospace; white-space: pre-wrap; overflow-x: auto; margin: 0; }}
+        pre code {{ background-color: transparent; padding: 0; border-radius: 0; display: block; }}
         </style></head><body>{html}</body></html>'''
         
         return full_html

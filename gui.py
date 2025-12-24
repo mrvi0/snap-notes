@@ -497,6 +497,9 @@ class NotesMainWindow(QMainWindow):
             self.mode_toggle.setText("Visual")
             # В визуальном режиме применяем обычные стили из темы
             self.apply_theme()  # Переприменяем тему для восстановления стилей
+            # Обновляем режим для отображения иконок ссылок
+            if hasattr(self.content_input, 'set_visual_mode'):
+                self.content_input.set_visual_mode(True)
         else:
             self.editor.set_mode(EditorMode.RAW)
             self.mode_toggle.setText("Raw")
@@ -508,6 +511,9 @@ class NotesMainWindow(QMainWindow):
                     font-size: {font_size}pt !important;
                 }}
             """)
+            # Отключаем иконки ссылок в RAW режиме
+            if hasattr(self.content_input, 'set_visual_mode'):
+                self.content_input.set_visual_mode(False)
     
     def on_add_note(self):
         """Создает новую заметку."""
