@@ -635,7 +635,6 @@ class NotesMainWindow(QMainWindow):
             
             email = self.settings.get('google_keep.email', '')
             password = self.settings.get('google_keep.password', '')
-            downgrade_extended = self.settings.get('google_keep.downgrade_extended', True)
             
             if not email or not password:
                 QMessageBox.warning(self, "Ошибка", "Настройки Google Keep не заполнены. Перейдите в Настройки → Синхронизация Google Keep")
@@ -644,8 +643,8 @@ class NotesMainWindow(QMainWindow):
             # Создаем экземпляр синхронизатора
             keep_sync = GoogleKeepSync(self.db_manager, email, password)
             
-            # Выполняем синхронизацию
-            success, conflicts = keep_sync.sync(downgrade_extended)
+            # Выполняем синхронизацию (Markdown копируется как есть)
+            success, conflicts = keep_sync.sync()
             
             if success:
                 if conflicts:

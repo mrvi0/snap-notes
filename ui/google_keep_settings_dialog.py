@@ -36,26 +36,30 @@ class GoogleKeepSettingsDialog(QDialog):
         # Включить синхронизацию
         self.enabled_checkbox = QCheckBox()
         self.enabled_checkbox.setToolTip("Включить синхронизацию с Google Keep")
-        keep_layout.addRow("Включить синхронизацию:", self.enabled_checkbox)
+        enabled_label = QLabel("Включить синхронизацию:")
+        enabled_label.setStyleSheet("font-size: 11pt;")
+        keep_layout.addRow(enabled_label, self.enabled_checkbox)
         
         # Email
+        email_label = QLabel("Email:")
+        email_label.setStyleSheet("font-size: 11pt;")
         self.email_input = QLineEdit()
         self.email_input.setPlaceholderText("your.email@gmail.com")
-        self.email_input.setFixedWidth(200)
-        keep_layout.addRow("Email:", self.email_input)
+        self.email_input.setFixedWidth(350)
+        self.email_input.setFixedHeight(28)
+        self.email_input.setStyleSheet("font-size: 10pt;")
+        keep_layout.addRow(email_label, self.email_input)
         
         # Пароль
+        password_label = QLabel("Пароль:")
+        password_label.setStyleSheet("font-size: 11pt;")
         self.password_input = QLineEdit()
         self.password_input.setPlaceholderText("Пароль или токен приложения")
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
-        self.password_input.setFixedWidth(200)
-        keep_layout.addRow("Пароль:", self.password_input)
-        
-        # Понижать расширенный Markdown
-        self.downgrade_checkbox = QCheckBox()
-        self.downgrade_checkbox.setToolTip("Понижать расширенный Markdown до safe-уровня при синхронизации")
-        self.downgrade_checkbox.setEnabled(False)
-        keep_layout.addRow("Понижать расширенный Markdown:", self.downgrade_checkbox)
+        self.password_input.setFixedWidth(350)
+        self.password_input.setFixedHeight(28)
+        self.password_input.setStyleSheet("font-size: 10pt;")
+        keep_layout.addRow(password_label, self.password_input)
         
         keep_group.setLayout(keep_layout)
         layout.addWidget(keep_group)
@@ -94,7 +98,6 @@ class GoogleKeepSettingsDialog(QDialog):
     def on_enabled_changed(self, enabled: bool):
         """Обрабатывает изменение состояния чекбокса включения."""
         # Поля ввода всегда активны, только кнопка теста зависит от включения
-        self.downgrade_checkbox.setEnabled(enabled)
         self._update_test_button_state()
     
     def load_settings(self):
@@ -102,12 +105,10 @@ class GoogleKeepSettingsDialog(QDialog):
         enabled = self.settings.get('google_keep.enabled', False)
         email = self.settings.get('google_keep.email', '')
         password = self.settings.get('google_keep.password', '')
-        downgrade = self.settings.get('google_keep.downgrade_extended', True)
         
         self.enabled_checkbox.setChecked(enabled)
         self.email_input.setText(email)
         self.password_input.setText(password)
-        self.downgrade_checkbox.setChecked(downgrade)
         
         # Обновляем состояние полей
         self.on_enabled_changed(enabled)
@@ -144,7 +145,6 @@ class GoogleKeepSettingsDialog(QDialog):
         enabled = self.enabled_checkbox.isChecked()
         email = self.email_input.text().strip()
         password = self.password_input.text().strip()
-        downgrade = self.downgrade_checkbox.isChecked()
         
         if enabled and (not email or not password):
             QMessageBox.warning(self, "Ошибка", "Для включения синхронизации необходимо указать email и пароль")
@@ -154,7 +154,6 @@ class GoogleKeepSettingsDialog(QDialog):
         self.settings.set('google_keep.enabled', enabled)
         self.settings.set('google_keep.email', email)
         self.settings.set('google_keep.password', password)
-        self.settings.set('google_keep.downgrade_extended', downgrade)
         
         super().accept()
     
@@ -170,7 +169,4 @@ class GoogleKeepSettingsDialog(QDialog):
         """Возвращает пароль."""
         return self.password_input.text().strip()
     
-    def get_downgrade_extended(self) -> bool:
-        """Возвращает, нужно ли понижать расширенный Markdown."""
-        return self.downgrade_checkbox.isChecked()
 

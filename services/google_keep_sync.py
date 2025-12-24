@@ -60,25 +60,20 @@ class GoogleKeepSync:
             self._authenticated = False
             return False
     
-    def _markdown_to_keep_text(self, markdown_text: str, downgrade_extended: bool = False) -> str:
+    def _markdown_to_keep_text(self, markdown_text: str) -> str:
         """
-        Возвращает Markdown текст для Google Keep без конвертации.
+        Возвращает Markdown текст для Google Keep без изменений.
         
-        Google Keep может хранить Markdown текст как есть, поэтому не конвертируем.
-        Если требуется, можно понизить расширенный Markdown до safe-уровня.
+        Синхронизация полностью копирует все теги Markdown в том виде, в котором они есть,
+        без переформатирования и прочего.
         
         Args:
             markdown_text: Текст в формате Markdown
-            downgrade_extended: Понижать ли расширенный markdown до safe-уровня
             
         Returns:
-            Markdown текст для Google Keep (без изменений или пониженный до safe-уровня)
+            Markdown текст для Google Keep (без изменений)
         """
-        if downgrade_extended and MarkdownLevel.contains_extended_markdown(markdown_text):
-            markdown_text = MarkdownLevel.downgrade_to_safe(markdown_text)
-            logger.info("Markdown понижен до safe-уровня для Google Keep")
-        
-        # Возвращаем Markdown как есть, без конвертации в plain text
+        # Возвращаем Markdown как есть, без каких-либо изменений
         return markdown_text
     
     def _keep_text_to_markdown(self, keep_text: str) -> str:
@@ -179,13 +174,12 @@ class GoogleKeepSync:
             logger.error(f"Ошибка при отправке заметок в Google Keep: {e}")
             raise
     
-    def sync(self, downgrade_extended: bool = False) -> Tuple[bool, List[Tuple[Note, Note, str]]]:
+    def sync(self) -> Tuple[bool, List[Tuple[Note, Note, str]]]:
         """
         Синхронизирует заметки с Google Keep (двусторонняя синхронизация).
         
-        Args:
-            downgrade_extended: Понижать ли расширенный markdown до safe-уровня
-            
+        Синхронизация полностью копирует все теги Markdown без изменений.
+        
         Returns:
             Кортеж (успех, список конфликтов)
         """
@@ -212,8 +206,8 @@ class GoogleKeepSync:
                     # Новая заметка из Keep
                     self.db_manager.create_note(keep_note.title, keep_note.markdown_content)
             
-            # Отправляем локальные заметки в Keep
-            self.push_notes(local_notes, downgrade_extended)
+            # Отправляем локальные заметки в Keep (Markdown как есть)
+            self.push_notes(local_notes)
             
             logger.info("Синхронизация с Google Keep завершена успешно")
             return True, conflicts

@@ -31,8 +31,7 @@ class Settings:
             "google_keep": {
                 "enabled": False,
                 "email": "",
-                "password": "",
-                "downgrade_extended": True  # Понижать расширенный markdown до safe-уровня
+                "password": ""
             }
         }
         self.load()
