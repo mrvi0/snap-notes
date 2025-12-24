@@ -50,15 +50,22 @@ class GoogleKeepSettingsDialog(QDialog):
         self.email_input.setStyleSheet("font-size: 10pt;")
         keep_layout.addRow(email_label, self.email_input)
         
-        # Пароль
-        password_label = QLabel("Пароль:")
+        # Пароль / Токен приложения
+        password_label = QLabel("Токен приложения:")
         password_label.setStyleSheet("font-size: 11pt;")
         self.password_input = QLineEdit()
-        self.password_input.setPlaceholderText("Пароль или токен приложения")
+        self.password_input.setPlaceholderText("16-символьный токен приложения")
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.password_input.setFixedWidth(350)
         self.password_input.setFixedHeight(28)
         self.password_input.setStyleSheet("font-size: 10pt;")
+        self.password_input.setToolTip(
+            "Для получения токена приложения:\n"
+            "1. Включите двухфакторную аутентификацию в Google аккаунте\n"
+            "2. Перейдите: https://myaccount.google.com/apppasswords\n"
+            "3. Создайте токен для 'Mail' или 'Other'\n"
+            "4. Используйте 16-символьный токен (без пробелов)"
+        )
         keep_layout.addRow(password_label, self.password_input)
         
         keep_group.setLayout(keep_layout)
@@ -121,7 +128,7 @@ class GoogleKeepSettingsDialog(QDialog):
         password = self.password_input.text().strip()
         
         if not email or not password:
-            QMessageBox.warning(self, "Ошибка", "Введите email и пароль")
+            QMessageBox.warning(self, "Ошибка", "Введите email и токен приложения")
             return
         
         # Блокируем кнопку во время теста
@@ -139,14 +146,31 @@ class GoogleKeepSettingsDialog(QDialog):
             if sync.authenticate():
                 QMessageBox.information(self, "Успех", "Соединение с Google Keep установлено успешно")
             else:
-                QMessageBox.critical(self, "Ошибка", "Не удалось подключиться к Google Keep.\n\nПроверьте правильность email и пароля.\nЕсли используете двухфакторную аутентификацию, используйте токен приложения вместо пароля.")
+                QMessageBox.critical(
+                    self, "Ошибка",
+                    "Не удалось подключиться к Google Keep.\n\n"
+                    "Убедитесь, что:\n"
+                    "1. Используете токен приложения (не обычный пароль)\n"
+                    "2. Токен состоит из 16 символов (без пробелов)\n"
+                    "3. Включена двухфакторная аутентификация\n\n"
+                    "Как получить токен:\n"
+                    "https://myaccount.google.com/apppasswords"
+                )
         except ImportError:
             QMessageBox.critical(self, "Ошибка", "Библиотека gkeepapi не установлена.\n\nУстановите: pip install gkeepapi")
         except Exception as e:
             logger.error(f"Ошибка при тестировании соединения: {e}", exc_info=True)
             error_msg = str(e)
-            if "login" in error_msg.lower() or "auth" in error_msg.lower():
-                error_msg = f"Ошибка аутентификации: {error_msg}\n\nПроверьте правильность email и пароля.\nЕсли используете двухфакторную аутентификацию, используйте токен приложения."
+            if "BadAuthentication" in error_msg or "auth" in error_msg.lower():
+                error_msg = (
+                    f"Ошибка аутентификации: {error_msg}\n\n"
+                    "Используйте токен приложения, а не обычный пароль!\n\n"
+                    "Как получить токен:\n"
+                    "1. Включите двухфакторную аутентификацию\n"
+                    "2. Перейдите: https://myaccount.google.com/apppasswords\n"
+                    "3. Создайте токен для 'Mail' или 'Other'\n"
+                    "4. Используйте 16-символьный токен (без пробелов)"
+                )
             QMessageBox.critical(self, "Ошибка", f"Ошибка подключения:\n{error_msg}")
         finally:
             # Восстанавливаем кнопку

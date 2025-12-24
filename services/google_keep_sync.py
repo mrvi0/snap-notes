@@ -47,11 +47,19 @@ class GoogleKeepSync:
         """
         Аутентифицируется в Google Keep.
         
+        Использует токен приложения (App Password) вместо обычного пароля.
+        Для получения токена приложения:
+        1. Включите двухфакторную аутентификацию в Google аккаунте
+        2. Перейдите в https://myaccount.google.com/apppasswords
+        3. Создайте токен для приложения "Mail" или "Other"
+        4. Используйте этот 16-символьный токен вместо пароля
+        
         Returns:
             True если аутентификация успешна
         """
         try:
-            self.keep.login(self.email, self.password)
+            # Используем новый метод authenticate вместо устаревшего login
+            self.keep.authenticate(self.email, self.password)
             self._authenticated = True
             logger.info("Успешная аутентификация в Google Keep")
             return True
