@@ -258,6 +258,10 @@ class MarkdownEditor:
             code_bg = QColor("#f5f5f5")
             code_border = QColor("#ddd")
         
+        # Получаем markdown текст для поиска паттернов
+        markdown_text = self.get_markdown()
+        document = self.text_edit.document()
+        
         # Моноширинный шрифт - используем фиксированный размер
         # Получаем текущий размер шрифта из документа
         default_font = document.defaultFont()
@@ -266,10 +270,6 @@ class MarkdownEditor:
         monospace_font = QFont("Courier New", font_size)
         monospace_font.setStyleHint(QFont.StyleHint.Monospace)
         monospace_font.setFixedPitch(True)
-        
-        # Получаем markdown текст для поиска паттернов
-        markdown_text = self.get_markdown()
-        document = self.text_edit.document()
         
         # Находим inline code (обратные кавычки `text`)
         inline_code_pattern = re.compile(r'`([^`\n]+)`')
