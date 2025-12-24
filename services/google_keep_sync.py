@@ -140,13 +140,14 @@ class GoogleKeepSync:
             logger.error(f"Ошибка при загрузке заметок из Google Keep: {e}")
             raise
     
-    def push_notes(self, notes: List[Note], downgrade_extended: bool = False) -> bool:
+    def push_notes(self, notes: List[Note]) -> bool:
         """
         Отправляет заметки в Google Keep.
         
+        Синхронизация полностью копирует все теги Markdown без изменений.
+        
         Args:
             notes: Список заметок для отправки
-            downgrade_extended: Понижать ли расширенный markdown до safe-уровня
             
         Returns:
             True если успешно
