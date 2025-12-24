@@ -147,6 +147,9 @@ class MarkdownEditor:
         Args:
             markdown_text: Текст в формате Markdown
         """
+        # Всегда сохраняем оригинальный Markdown
+        self._current_markdown = markdown_text
+        
         if self.mode == EditorMode.VISUAL:
             # В визуальном режиме конвертируем Markdown в HTML с правильными стилями
             html_content = self._markdown_to_html(markdown_text)
