@@ -340,6 +340,32 @@ class MarkdownEditor:
             html,
             flags=re.DOTALL
         )
+        # Также обрабатываем <pre> без <code> внутри (если библиотека так генерирует)
+        def process_pre_only(match):
+            content = match.group(1)
+            # Если уже обработано, пропускаем
+            if '<code style=' in match.group(0):
+                return match.group(0)
+            lines = content.split('\n')
+            while lines and not lines[0].strip():
+                lines.pop(0)
+            while lines and not lines[-1].strip():
+                lines.pop()
+            content = '\n'.join(lines)
+            if content:
+                lines_final = content.split('\n')
+                lines_final = [line.rstrip() for line in lines_final]
+                content = '\n'.join(lines_final)
+            from html import escape
+            content = escape(content)
+            return f'<pre style="{pre_style}"><code style="{pre_code_style}">{content}</code></pre>'
+        
+        html = re.sub(
+            r'<pre[^>]*>(.*?)</pre>',
+            process_pre_only,
+            html,
+            flags=re.DOTALL
+        )
         
         # Затем обрабатываем inline <code> (не внутри pre)
         # Находим все <code> которые не внутри <pre>

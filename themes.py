@@ -293,18 +293,18 @@ QPushButton#delete_button:pressed {
 }
 QPushButton#format_button {
     background-color: transparent;
-    border: 1px solid #333;
+    border: 1px solid #888;
     border-radius: 4px;
     padding: 4px;
     font-size: 11pt;
-    color: #212121;
+    color: #e0e0e0;
 }
 QPushButton#format_button:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-    border-color: #555;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: #aaa;
 }
 QPushButton#format_button:pressed {
-    background-color: rgba(0, 0, 0, 0.1);
+    background-color: rgba(255, 255, 255, 0.15);
 }
 QWidget#markdown_bar {
     background-color: #1e1e1e;
