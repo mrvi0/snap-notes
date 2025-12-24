@@ -37,7 +37,7 @@ class SettingsDialog(QDialog):
         theme_layout = QFormLayout()
         
         self.theme_combo = QComboBox()
-        self.theme_combo.addItems(["Светлая", "Темная", "Системная"])
+        self.theme_combo.addItems(["Светлая", "Темная"])
         theme_layout.addRow("Тема:", self.theme_combo)
         
         # Выбор цвета кнопок
@@ -108,13 +108,11 @@ class SettingsDialog(QDialog):
     
     def load_settings(self):
         """Загружает настройки в форму."""
-        theme = self.settings.get("theme", "system")
+        theme = self.settings.get("theme", "light")
         if theme == "light":
             self.theme_combo.setCurrentIndex(0)
-        elif theme == "dark":
-            self.theme_combo.setCurrentIndex(1)
         else:
-            self.theme_combo.setCurrentIndex(2)
+            self.theme_combo.setCurrentIndex(1)
         
         # Загружаем цвет кнопок
         button_color = self.settings.get("button_color", "#4CAF50")
@@ -151,10 +149,8 @@ class SettingsDialog(QDialog):
         index = self.theme_combo.currentIndex()
         if index == 0:
             return "light"
-        elif index == 1:
-            return "dark"
         else:
-            return "system"
+            return "dark"
     
     def get_button_color(self) -> str:
         """Возвращает выбранный цвет кнопок."""

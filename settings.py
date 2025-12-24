@@ -21,7 +21,7 @@ class Settings:
         """
         self.config_file = config_file
         self.settings: Dict[str, Any] = {
-            "theme": "system",  # "light", "dark", "system"
+            "theme": "light",  # "light", "dark"
             "button_color": "#4CAF50",  # Цвет кнопок
             "font_size": 12,  # Размер шрифта в пунктах
             "auto_save": {

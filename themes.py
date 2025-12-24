@@ -501,7 +501,7 @@ QPushButton:pressed {{
         base_theme = DARK_THEME
     elif theme_name == "light":
         base_theme = LIGHT_THEME
-    else:  # system или по умолчанию
+    else:  # по умолчанию light
         base_theme = LIGHT_THEME
     
     # Заменяем стили кнопок (ищем блок QPushButton и заменяем его)

@@ -302,6 +302,9 @@ class MarkdownEditor:
             self.text_edit.setMarkdown(markdown_text)
             html = self.text_edit.toHtml()
         
+        # Логируем для отладки
+        logger.debug(f"HTML before processing: {html[:200]}")
+        
         # ВАЖНО: QTextEdit может игнорировать CSS из <style>, поэтому применяем ВСЕ стили напрямую в inline стилях
         # Определяем стили ДО использования в функциях
         inline_code_style = f'background-color: {code_bg}; padding: 3px 6px; border-radius: 3px; font-family: \'Courier New\', monospace; display: inline-block;'
@@ -327,6 +330,7 @@ class MarkdownEditor:
                 lines_final = [line.rstrip() for line in lines_final]
                 code_content = '\n'.join(lines_final)
             # Применяем inline стили напрямую в элементах
+            # ВАЖНО: используем HTML entities для кавычек в стилях
             return f'<pre style="{pre_style}"><code style="{pre_code_style}">{code_content}</code></pre>'
         html = re.sub(
             r'<pre><code[^>]*>(.*?)</code></pre>',
