@@ -305,7 +305,8 @@ class MarkdownEditor:
         # Добавляем inline стили для кода
         # Заменяем <code> на <code> с inline стилями (только для inline, не внутри pre)
         # Увеличиваем padding для лучшей видимости
-        code_style = f'background-color: {code_bg} !important; padding: 3px 6px !important; border-radius: 3px; font-family: "Courier New", monospace !important; display: inline-block;'
+        # ВАЖНО: используем inline стили напрямую, так как QTextEdit может игнорировать CSS из <style>
+        code_style = f'background-color: {code_bg}; padding: 3px 6px; border-radius: 3px; font-family: \'Courier New\', monospace; display: inline-block;'
         
         # Сначала обрабатываем блоки <pre><code>
         # Убираем лишние переносы строк в конце
@@ -360,12 +361,10 @@ class MarkdownEditor:
         )
         
         # Обертываем в базовый HTML
-        # Используем !important для переопределения стилей QTextEdit
+        # НЕ используем CSS в <style>, так как QTextEdit может его игнорировать
+        # Все стили уже применены через inline стили в элементах
         full_html = f'''<html><head><style>
         body {{ color: {text_color}; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }}
-        code {{ background-color: {code_bg} !important; padding: 3px 6px !important; border-radius: 3px; font-family: "Courier New", monospace !important; display: inline-block !important; }}
-        pre {{ background-color: {code_bg} !important; padding: 12px !important; border-radius: 4px; border-left: 3px solid {code_border} !important; font-family: "Courier New", monospace !important; white-space: pre-wrap; overflow-x: auto; margin: 0 !important; }}
-        pre code {{ background-color: transparent !important; padding: 0 !important; border-radius: 0; display: block !important; }}
         </style></head><body>{html}</body></html>'''
         
         return full_html
