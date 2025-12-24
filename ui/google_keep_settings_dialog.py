@@ -40,36 +40,15 @@ class GoogleKeepSettingsDialog(QDialog):
         enabled_label.setStyleSheet("font-size: 11pt;")
         keep_layout.addRow(enabled_label, self.enabled_checkbox)
         
-        # Email
-        email_label = QLabel("Email:")
-        email_label.setStyleSheet("font-size: 11pt;")
-        self.email_input = QLineEdit()
-        self.email_input.setPlaceholderText("your.email@gmail.com")
-        self.email_input.setFixedWidth(350)
-        self.email_input.setFixedHeight(28)
-        self.email_input.setStyleSheet("font-size: 10pt;")
-        keep_layout.addRow(email_label, self.email_input)
-        
-        # Пароль / Токен приложения
-        password_label = QLabel("Токен приложения:")
-        password_label.setStyleSheet("font-size: 11pt;")
-        self.password_input = QLineEdit()
-        self.password_input.setPlaceholderText("16-символьный токен приложения (или master token)")
-        self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
-        self.password_input.setFixedWidth(350)
-        self.password_input.setFixedHeight(28)
-        self.password_input.setStyleSheet("font-size: 10pt;")
-        self.password_input.setToolTip(
-            "Вариант 1 - Токен приложения:\n"
-            "1. Включите двухфакторную аутентификацию\n"
-            "2. Перейдите: https://myaccount.google.com/apppasswords\n"
-            "3. Создайте токен для 'Mail' или 'Other'\n"
-            "4. Используйте 16-символьный токен (без пробелов)\n\n"
-            "Вариант 2 - Master token:\n"
-            "Если app password не работает, используйте master token.\n"
-            "Получите его через gkeepapi CLI или скрипт."
+        # Информация об OAuth
+        info_label = QLabel(
+            "Синхронизация использует OAuth 2.0 для безопасной авторизации.\n"
+            "При первом подключении откроется браузер для авторизации.\n"
+            "Токен будет сохранен локально для последующих использований."
         )
-        keep_layout.addRow(password_label, self.password_input)
+        info_label.setWordWrap(True)
+        info_label.setStyleSheet("font-size: 10pt; color: #666; padding: 10px;")
+        keep_layout.addRow(info_label)
         
         keep_group.setLayout(keep_layout)
         layout.addWidget(keep_group)
@@ -97,15 +76,11 @@ class GoogleKeepSettingsDialog(QDialog):
         
         # Подключаем сигналы
         self.enabled_checkbox.toggled.connect(self.on_enabled_changed)
-        self.email_input.textChanged.connect(self._update_test_button_state)
-        self.password_input.textChanged.connect(self._update_test_button_state)
     
     def _update_test_button_state(self):
         """Обновляет состояние кнопки теста соединения."""
-        # Кнопка активна, если заполнены оба поля (независимо от чекбокса)
-        has_email = bool(self.email_input.text().strip())
-        has_password = bool(self.password_input.text().strip())
-        self.test_btn.setEnabled(has_email and has_password)
+        # Кнопка активна, если синхронизация включена
+        self.test_btn.setEnabled(self.enabled_checkbox.isChecked())
     
     def on_enabled_changed(self, enabled: bool):
         """Обрабатывает изменение состояния чекбокса включения."""
@@ -115,31 +90,14 @@ class GoogleKeepSettingsDialog(QDialog):
     def load_settings(self):
         """Загружает настройки из объекта Settings."""
         enabled = self.settings.get('google_keep.enabled', False)
-        email = self.settings.get('google_keep.email', '')
-        password = self.settings.get('google_keep.password', '')
         
         self.enabled_checkbox.setChecked(enabled)
-        self.email_input.setText(email)
-        self.password_input.setText(password)
         
         # Обновляем состояние полей
         self.on_enabled_changed(enabled)
     
     def test_connection(self):
-        """Тестирует соединение с Google Keep."""
-        email = self.email_input.text().strip()
-        password = self.password_input.text().strip()
-        
-        if not email or not password:
-            QMessageBox.warning(self, "Ошибка", "Введите email и токен приложения")
-            return
-        
-        # Убираем пробелы из токена (Google выдает с пробелами, но нужен без них)
-        password_clean = password.replace(' ', '').strip()
-        
-        # Логируем для отладки (без показа пароля)
-        logger.info(f"Тест соединения для email: {email}, длина токена: {len(password_clean)}")
-        
+        """Тестирует соединение с Google Keep через OAuth 2.0."""
         # Блокируем кнопку во время теста
         self.test_btn.setEnabled(False)
         self.test_btn.setText("Проверка...")
@@ -148,46 +106,51 @@ class GoogleKeepSettingsDialog(QDialog):
             from services.google_keep_sync import GoogleKeepSync
             from storage.database import DatabaseManager
             
-            # Создаем временный экземпляр для теста (используем очищенный токен)
+            # Создаем временный экземпляр для теста
             db_manager = DatabaseManager()
-            sync = GoogleKeepSync(db_manager, email, password_clean)
+            sync = GoogleKeepSync(db_manager, parent_widget=self)
             
-            if sync.authenticate():
-                QMessageBox.information(self, "Успех", "Соединение с Google Keep установлено успешно")
-                # Пробуем получить master token для будущего использования
-                master_token = sync.get_master_token()
-                if master_token:
-                    logger.info("Master token получен, можно сохранить для будущих аутентификаций")
+            # Показываем сообщение о том, что откроется браузер
+            QMessageBox.information(
+                self, 
+                "Авторизация", 
+                "Сейчас откроется браузер для авторизации в Google.\n\n"
+                "Разрешите доступ к Google Keep и дождитесь завершения."
+            )
+            
+            if sync.authenticate(parent_widget=self):
+                QMessageBox.information(
+                    self, 
+                    "Успех", 
+                    "Соединение с Google Keep установлено успешно!\n\n"
+                    "Токен сохранен локально для будущих использований."
+                )
             else:
-                error_msg = (
+                QMessageBox.critical(
+                    self, 
+                    "Ошибка", 
                     "Не удалось подключиться к Google Keep.\n\n"
-                    "Возможные причины:\n"
-                    "1. Google больше не принимает app passwords для вашего аккаунта\n"
-                    "2. Токен приложения неверный или устарел\n"
-                    "3. Требуется использовать master token\n\n"
-                    "Решения:\n"
-                    "1. Попробуйте создать новый токен приложения:\n"
-                    "   https://myaccount.google.com/apppasswords\n"
-                    "2. Используйте master token (получите через gkeepapi CLI)\n"
+                    "Убедитесь, что:\n"
+                    "1. Вы разрешили доступ к Google Keep в браузере\n"
+                    "2. У вас есть доступ к интернету\n"
                     "3. Проверьте логи приложения для деталей"
                 )
-                QMessageBox.critical(self, "Ошибка", error_msg)
-        except ImportError:
-            QMessageBox.critical(self, "Ошибка", "Библиотека gkeepapi не установлена.\n\nУстановите: pip install gkeepapi")
+        except ImportError as e:
+            QMessageBox.critical(
+                self, 
+                "Ошибка", 
+                f"Не установлены необходимые библиотеки.\n\n"
+                f"Установите: pip install google-auth google-auth-oauthlib google-auth-httplib2\n\n"
+                f"Ошибка: {e}"
+            )
         except Exception as e:
             logger.error(f"Ошибка при тестировании соединения: {e}", exc_info=True)
-            error_msg = str(e)
-            if "BadAuthentication" in error_msg or "auth" in error_msg.lower():
-                error_msg = (
-                    f"Ошибка аутентификации: {error_msg}\n\n"
-                    "Используйте токен приложения, а не обычный пароль!\n\n"
-                    "Как получить токен:\n"
-                    "1. Включите двухфакторную аутентификацию\n"
-                    "2. Перейдите: https://myaccount.google.com/apppasswords\n"
-                    "3. Создайте токен для 'Mail' или 'Other'\n"
-                    "4. Используйте 16-символьный токен (без пробелов)"
-                )
-            QMessageBox.critical(self, "Ошибка", f"Ошибка подключения:\n{error_msg}")
+            QMessageBox.critical(
+                self, 
+                "Ошибка", 
+                f"Ошибка подключения:\n{str(e)}\n\n"
+                "Проверьте логи приложения для деталей."
+            )
         finally:
             # Восстанавливаем кнопку
             self.test_btn.setText("Тест соединения")
@@ -196,30 +159,14 @@ class GoogleKeepSettingsDialog(QDialog):
     def accept(self):
         """Сохраняет настройки и закрывает диалог."""
         enabled = self.enabled_checkbox.isChecked()
-        email = self.email_input.text().strip()
-        password = self.password_input.text().strip()
-        
-        if enabled and (not email or not password):
-            QMessageBox.warning(self, "Ошибка", "Для включения синхронизации необходимо указать email и пароль")
-            return
         
         # Сохраняем настройки
         self.settings.set('google_keep.enabled', enabled)
-        self.settings.set('google_keep.email', email)
-        self.settings.set('google_keep.password', password)
         
         super().accept()
     
     def get_enabled(self) -> bool:
         """Возвращает, включена ли синхронизация."""
         return self.enabled_checkbox.isChecked()
-    
-    def get_email(self) -> str:
-        """Возвращает email."""
-        return self.email_input.text().strip()
-    
-    def get_password(self) -> str:
-        """Возвращает пароль."""
-        return self.password_input.text().strip()
     
 

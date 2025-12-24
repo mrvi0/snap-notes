@@ -629,19 +629,12 @@ class NotesMainWindow(QMainWindow):
                 QMessageBox.critical(self, "Ошибка", f"Ошибка при синхронизации: {e}")
     
     def _sync_google_keep(self):
-        """Синхронизирует заметки с Google Keep."""
+        """Синхронизирует заметки с Google Keep через OAuth 2.0."""
         try:
             from services.google_keep_sync import GoogleKeepSync
             
-            email = self.settings.get('google_keep.email', '')
-            password = self.settings.get('google_keep.password', '')
-            
-            if not email or not password:
-                QMessageBox.warning(self, "Ошибка", "Настройки Google Keep не заполнены. Перейдите в Настройки → Синхронизация Google Keep")
-                return
-            
-            # Создаем экземпляр синхронизатора
-            keep_sync = GoogleKeepSync(self.db_manager, email, password)
+            # Создаем экземпляр синхронизатора (OAuth не требует email/password)
+            keep_sync = GoogleKeepSync(self.db_manager, parent_widget=self)
             
             # Выполняем синхронизацию (Markdown копируется как есть)
             success, conflicts = keep_sync.sync()
