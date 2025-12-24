@@ -12,8 +12,9 @@ from typing import Optional
 from enum import Enum
 
 from PyQt6.QtWidgets import QTextEdit
-from PyQt6.QtGui import QTextCursor, QTextCharFormat, QFont
+from PyQt6.QtGui import QTextCursor, QTextCharFormat, QTextBlockFormat, QFont, QColor
 from PyQt6.QtCore import Qt
+import re
 
 try:
     from QMarkdownTextEdit import QMarkdownTextEdit
@@ -40,15 +41,17 @@ class MarkdownEditor:
     Обеспечивает работу в двух режимах без изменения содержимого markdown-текста.
     """
     
-    def __init__(self, text_edit: QMarkdownTextEdit):
+    def __init__(self, text_edit: QMarkdownTextEdit, is_dark_theme: bool = False):
         """
         Инициализация редактора.
         
         Args:
             text_edit: Виджет QMarkdownTextEdit для редактирования
+            is_dark_theme: True если используется темная тема
         """
         self.text_edit = text_edit
         self.mode = EditorMode.VISUAL
+        self.is_dark_theme = is_dark_theme
         self._setup_editor()
     
     def _setup_editor(self) -> None:
@@ -79,6 +82,10 @@ class MarkdownEditor:
             # В визуальном режиме рендерим markdown
             # PyQt6 QTextEdit имеет встроенный метод setMarkdown
             self.text_edit.setMarkdown(current_markdown)
+            # Применяем стили к блокам кода и inline коду программно
+            # Используем QTimer для отложенного применения, так как setMarkdown асинхронный
+            from PyQt6.QtCore import QTimer
+            QTimer.singleShot(10, self._apply_code_styling)
         else:
             # В raw режиме показываем чистый markdown-текст
             # Сбрасываем все форматирование, чтобы текст был обычным
@@ -124,6 +131,9 @@ class MarkdownEditor:
         if self.mode == EditorMode.VISUAL:
             # PyQt6 QTextEdit имеет встроенный метод setMarkdown
             self.text_edit.setMarkdown(markdown_text)
+            # Применяем стили к блокам кода и inline коду программно
+            from PyQt6.QtCore import QTimer
+            QTimer.singleShot(10, self._apply_code_styling)
         else:
             # В RAW режиме устанавливаем как plain text и сбрасываем форматирование
             self.text_edit.setPlainText(markdown_text)
@@ -232,4 +242,87 @@ class MarkdownEditor:
         new_cursor = self.text_edit.textCursor()
         new_cursor.setPosition(line_start + len(formatted_line))
         self.text_edit.setTextCursor(new_cursor)
+    
+    def _apply_code_styling(self) -> None:
+        """
+        Применяет стили к блокам кода и inline коду программно.
+        
+        PyQt6 QTextEdit не поддерживает CSS селекторы для вложенных HTML элементов,
+        поэтому стили применяются программно через QTextCharFormat и QTextBlockFormat.
+        """
+        # Определяем цвета в зависимости от темы
+        if self.is_dark_theme:
+            code_bg = QColor("#2a2a2a")
+            code_border = QColor("#444")
+        else:
+            code_bg = QColor("#f5f5f5")
+            code_border = QColor("#ddd")
+        
+        # Моноширинный шрифт
+        monospace_font = QFont("Courier New")
+        monospace_font.setStyleHint(QFont.StyleHint.Monospace)
+        
+        # Получаем markdown текст для поиска паттернов
+        markdown_text = self.get_markdown()
+        document = self.text_edit.document()
+        cursor = self.text_edit.textCursor()
+        
+        # Находим inline code (обратные кавычки `text`)
+        inline_code_pattern = re.compile(r'`([^`\n]+)`')
+        matches = list(inline_code_pattern.finditer(markdown_text))
+        
+        # Применяем стили к inline коду
+        for match in reversed(matches):  # Обратный порядок, чтобы не сбить позиции
+            code_text = match.group(1)
+            
+            # Ищем этот текст в документе
+            search_cursor = QTextCursor(document)
+            search_cursor.setPosition(0)
+            found = False
+            while True:
+                search_cursor = document.find(code_text, search_cursor)
+                if search_cursor.isNull():
+                    break
+                
+                # Проверяем, что это действительно код (можно проверить форматирование)
+                # Применяем стили
+                char_format = search_cursor.charFormat()
+                new_format = QTextCharFormat(char_format)
+                new_format.setFont(monospace_font)
+                new_format.setBackground(code_bg)
+                search_cursor.setCharFormat(new_format)
+                found = True
+                break
+        
+        # Находим блоки кода (тройные обратные кавычки ```)
+        code_block_pattern = re.compile(r'```[\s\S]*?```', re.MULTILINE)
+        code_blocks = list(code_block_pattern.finditer(markdown_text))
+        
+        # Применяем стили к блокам кода
+        for match in reversed(code_blocks):
+            # Получаем содержимое блока (без ```)
+            block_content = match.group(0)[3:-3]  # Убираем ``` в начале и конце
+            lines = block_content.split('\n')
+            
+            # Ищем каждую строку блока в документе
+            search_cursor = QTextCursor(document)
+            search_cursor.setPosition(0)
+            for line in lines:
+                if not line.strip():
+                    continue
+                search_cursor = document.find(line, search_cursor)
+                if not search_cursor.isNull():
+                    # Применяем стили ко всей строке
+                    block_format = search_cursor.blockFormat()
+                    new_block_format = QTextBlockFormat(block_format)
+                    new_block_format.setBackground(code_bg)
+                    search_cursor.setBlockFormat(new_block_format)
+                    
+                    # Применяем моноширинный шрифт
+                    char_format = search_cursor.charFormat()
+                    new_char_format = QTextCharFormat(char_format)
+                    new_char_format.setFont(monospace_font)
+                    search_cursor.setCharFormat(new_char_format)
+        
+        logger.debug("Применение стилей кода выполнено")
 

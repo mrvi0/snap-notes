@@ -411,7 +411,10 @@ class NotesMainWindow(QMainWindow):
         self.content_input.textChanged.connect(self.on_content_changed)
         
         # Инициализируем редактор
-        self.editor = MarkdownEditor(self.content_input)
+        # Определяем, какая тема используется
+        theme_name = self.settings.get('theme', 'light')
+        is_dark = (theme_name == 'dark')
+        self.editor = MarkdownEditor(self.content_input, is_dark_theme=is_dark)
         self.editor.set_mode(EditorMode.VISUAL)
         
         # Устанавливаем режим для отображения иконок
