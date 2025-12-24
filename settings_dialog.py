@@ -10,8 +10,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QColor
 from PyQt6.QtCore import Qt
 
-from settings import Settings
-from themes import get_theme
+from utils import Settings, get_theme
 
 logger = logging.getLogger(__name__)
 

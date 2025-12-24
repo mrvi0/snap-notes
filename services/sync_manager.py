@@ -13,7 +13,7 @@ from datetime import datetime
 from pathlib import Path
 
 from models import Note
-from database import DatabaseManager
+from storage.database import DatabaseManager
 
 logger = logging.getLogger(__name__)
 
