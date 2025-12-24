@@ -14,10 +14,9 @@ from PyQt6.QtWidgets import (
     QDialogButtonBox, QListWidgetItem, QMenuBar, QMenu, QToolBar
 )
 from PyQt6.QtGui import (
-    QFont, QIcon, QTextCursor, QKeyEvent, QAction, QResizeEvent, 
-    QDesktopServices, QPainter, QPixmap, QMouseEvent, QTextCharFormat, QPen
+    QFont, QIcon, QTextCursor, QKeyEvent, QAction, QResizeEvent
 )
-from PyQt6.QtCore import Qt, QTimer, QUrl, QPoint, QRect
+from PyQt6.QtCore import Qt, QTimer
 
 from models import Note
 from database import DatabaseManager
@@ -26,6 +25,7 @@ from settings import Settings
 from themes import get_theme
 from settings_dialog import SettingsDialog
 from editor import MarkdownEditor, EditorMode
+from ui import LinkIconTextEdit, ConflictDialog
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ except ImportError:
     logger.warning("QMarkdownTextEdit не найден, используется QTextEdit с поддержкой Markdown")
 
 
-class LinkIconTextEdit(QTextEdit):
+# Удалены классы LinkIconTextEdit и ConflictDialog - перенесены в ui/
     """QTextEdit с поддержкой иконок ссылок, которые не копируются."""
     
     def __init__(self, parent=None):
