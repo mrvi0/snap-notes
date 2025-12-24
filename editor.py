@@ -56,6 +56,14 @@ class MarkdownEditor:
         self.mode = EditorMode.VISUAL
         self.is_dark_theme = is_dark_theme
         self._setup_editor()
+        
+        # Инициализируем Markdown конвертер
+        try:
+            import markdown
+            self.md = markdown.Markdown(extensions=['fenced_code', 'codehilite'])
+        except ImportError:
+            self.md = None
+            logger.warning("Библиотека markdown не установлена, используется встроенный setMarkdown")
     
     def _setup_editor(self) -> None:
         """Настраивает редактор."""
