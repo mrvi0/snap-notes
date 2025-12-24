@@ -6,7 +6,7 @@ HTML не используется.
 """
 import logging
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Tuple
 
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QListWidget,
