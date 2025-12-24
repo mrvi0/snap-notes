@@ -83,10 +83,10 @@ class MarkdownEditor:
             # В визуальном режиме рендерим markdown
             # PyQt6 QTextEdit имеет встроенный метод setMarkdown
             self.text_edit.setMarkdown(current_markdown)
-            # Временно отключаем автоматическую стилизацию кода, так как она вызывает проблемы
-            # TODO: Реализовать более точный метод стилизации
-            # from PyQt6.QtCore import QTimer
-            # QTimer.singleShot(10, self._apply_code_styling)
+            # Применяем стили к блокам кода и inline коду программно
+            # Используем QTimer для отложенного применения, так как setMarkdown асинхронный
+            from PyQt6.QtCore import QTimer
+            QTimer.singleShot(50, self._apply_code_styling)
         else:
             # В raw режиме показываем чистый markdown-текст
             # Сбрасываем все форматирование, чтобы текст был обычным
@@ -132,10 +132,9 @@ class MarkdownEditor:
         if self.mode == EditorMode.VISUAL:
             # PyQt6 QTextEdit имеет встроенный метод setMarkdown
             self.text_edit.setMarkdown(markdown_text)
-            # Временно отключаем автоматическую стилизацию кода, так как она вызывает проблемы
-            # TODO: Реализовать более точный метод стилизации
-            # from PyQt6.QtCore import QTimer
-            # QTimer.singleShot(10, self._apply_code_styling)
+            # Применяем стили к блокам кода и inline коду программно
+            from PyQt6.QtCore import QTimer
+            QTimer.singleShot(50, self._apply_code_styling)
         else:
             # В RAW режиме устанавливаем как plain text и сбрасываем форматирование
             self.text_edit.setPlainText(markdown_text)
@@ -249,9 +248,9 @@ class MarkdownEditor:
         """
         Применяет стили к блокам кода и inline коду программно.
         
-        ВАЖНО: Этот метод НЕ должен изменять содержимое документа или добавлять
-        новые элементы. Он только применяет визуальные стили к уже существующим
-        элементам кода, которые были созданы через setMarkdown().
+        Работает как VS Code preview:
+        - Inline code: фон только на сам текст с небольшими отступами
+        - Code blocks: один фон на все строки блока, по ширине текста
         """
         # Определяем цвета в зависимости от темы
         if self.is_dark_theme:
@@ -271,57 +270,134 @@ class MarkdownEditor:
         monospace_font.setStyleHint(QFont.StyleHint.Monospace)
         monospace_font.setFixedPitch(True)
         
-        # Проходим по всем блокам документа и проверяем их форматирование
-        # Блоки кода обычно имеют моноширинный шрифт или определенные характеристики
-        block = document.firstBlock()
-        in_code_block = False
-        code_block_start = None
+        # Получаем HTML представление для точного поиска тегов
+        html_content = self.text_edit.toHtml()
         
-        while block.isValid():
-            block_text = block.text()
-            block_format = block.blockFormat()
-            char_format = block.charFormat()
+        # Находим все теги <pre> (блоки кода) - они могут содержать <code> внутри
+        pre_pattern = re.compile(r'<pre[^>]*>(.*?)</pre>', re.DOTALL)
+        pre_matches = list(pre_pattern.finditer(html_content))
+        
+        # Находим все теги <code> которые НЕ внутри <pre>
+        code_pattern = re.compile(r'<code[^>]*>(.*?)</code>', re.DOTALL)
+        code_matches = list(code_pattern.finditer(html_content))
+        
+        # Фильтруем inline code (исключаем те, что внутри pre)
+        inline_code_matches = []
+        for code_match in code_matches:
+            code_start = code_match.start()
+            code_end = code_match.end()
+            # Проверяем, не находится ли этот code внутри pre
+            is_inside_pre = False
+            for pre_match in pre_matches:
+                if pre_match.start() < code_start < pre_match.end():
+                    is_inside_pre = True
+                    break
+            if not is_inside_pre:
+                inline_code_matches.append(code_match)
+        
+        # Применяем стили к inline коду
+        for code_match in inline_code_matches:
+            code_text = html_module.unescape(code_match.group(1))
+            if not code_text.strip():
+                continue
             
-            # Проверяем, является ли блок частью блока кода
-            # Блоки кода обычно имеют несколько пустых строк подряд или определенный формат
-            # Более надежный способ - проверить, есть ли в блоке моноширинный шрифт
-            # или проверить HTML представление
-            
-            # Простой эвристический подход: если блок содержит только код-подобный контент
-            # (много пробелов, специальных символов) и имеет моноширинный шрифт
-            
-            # Проверяем формат символов в блоке
-            cursor = QTextCursor(block)
-            cursor.select(QTextCursor.SelectionType.BlockUnderCursor)
-            
-            # Если блок выглядит как код (содержит много пробелов/табов в начале)
-            # или имеет определенные характеристики
-            is_code_like = (
-                block_text.startswith('    ') or  # 4+ пробела в начале
-                block_text.startswith('\t') or    # Таб в начале
-                (len(block_text.strip()) > 0 and 
-                 all(c in ' \t\n' or ord(c) < 128 for c in block_text))  # Только ASCII
-            )
-            
-            # Применяем стили только если блок действительно выглядит как код
-            # и не является частью обычного текста
-            if is_code_like and len(block_text.strip()) > 0:
-                # Применяем формат блока с фоном и отступами
-                new_block_format = QTextBlockFormat(block_format)
-                new_block_format.setBackground(code_bg)
-                new_block_format.setLeftMargin(12)
-                new_block_format.setRightMargin(12)
-                new_block_format.setTopMargin(6)
-                new_block_format.setBottomMargin(6)
-                cursor.setBlockFormat(new_block_format)
+            # Ищем этот текст в документе
+            cursor = QTextCursor(document)
+            cursor.setPosition(0)
+            found = False
+            while True:
+                cursor = document.find(code_text, cursor)
+                if cursor.isNull():
+                    break
                 
-                # Применяем моноширинный шрифт
-                new_char_format = QTextCharFormat(char_format)
-                new_char_format.setFont(monospace_font)
-                new_char_format.setFontFixedPitch(True)
-                new_char_format.setFontFamily("Courier New")
-                cursor.setCharFormat(new_char_format)
+                # Применяем стили только к найденному тексту (не ко всей строке)
+                start_pos = cursor.selectionStart()
+                end_pos = cursor.selectionEnd()
+                cursor.setPosition(start_pos)
+                cursor.setPosition(end_pos, QTextCursor.MoveMode.KeepAnchor)
+                
+                char_format = cursor.charFormat()
+                new_format = QTextCharFormat(char_format)
+                new_format.setFont(monospace_font)
+                new_format.setBackground(code_bg)
+                new_format.setFontFixedPitch(True)
+                new_format.setFontFamily("Courier New")
+                # Добавляем небольшой padding через изменение формата
+                # В QTextCharFormat нет прямого padding, но можно использовать свойства
+                cursor.setCharFormat(new_format)
+                found = True
+                break
+        
+        # Применяем стили к блокам кода (pre)
+        for pre_match in pre_matches:
+            pre_content = pre_match.group(1)
+            # Убираем внутренние теги <code> если есть
+            pre_content = re.sub(r'<code[^>]*>|</code>', '', pre_content)
+            pre_content = html_module.unescape(pre_content)
             
-            block = block.next()
+            if not pre_content.strip():
+                continue
+            
+            # Берем первую непустую строку для поиска
+            lines = pre_content.split('\n')
+            first_line = None
+            for line in lines:
+                if line.strip():
+                    first_line = line.strip()
+                    break
+            
+            if not first_line:
+                continue
+            
+            # Ищем эту строку в документе
+            cursor = QTextCursor(document)
+            cursor.setPosition(0)
+            found = False
+            while True:
+                cursor = document.find(first_line, cursor)
+                if cursor.isNull():
+                    break
+                
+                # Нашли начало блока, применяем стили ко всем строкам блока
+                block_start = cursor.block()
+                block = block_start
+                
+                # Собираем все блоки кода
+                code_blocks = []
+                for _ in range(min(len(lines), 200)):  # Ограничение для безопасности
+                    if not block.isValid():
+                        break
+                    code_blocks.append(block)
+                    block = block.next()
+                
+                # Применяем стили ко всем блокам как к одному целому
+                # Используем QTextBlockFormat для фона, но только на ширину текста
+                for block in code_blocks:
+                    block_cursor = QTextCursor(block)
+                    block_cursor.select(QTextCursor.SelectionType.BlockUnderCursor)
+                    
+                    # Применяем формат блока с фоном и отступами
+                    block_format = block.blockFormat()
+                    new_block_format = QTextBlockFormat(block_format)
+                    new_block_format.setBackground(code_bg)
+                    # Отступы: слева 12px, сверху/снизу 6px
+                    new_block_format.setLeftMargin(12)
+                    new_block_format.setRightMargin(12)
+                    new_block_format.setTopMargin(6)
+                    new_block_format.setBottomMargin(6)
+                    block_cursor.setBlockFormat(new_block_format)
+                    
+                    # Применяем моноширинный шрифт ко всему блоку
+                    block_cursor.select(QTextCursor.SelectionType.BlockUnderCursor)
+                    char_format = block_cursor.charFormat()
+                    new_char_format = QTextCharFormat(char_format)
+                    new_char_format.setFont(monospace_font)
+                    new_char_format.setFontFixedPitch(True)
+                    new_char_format.setFontFamily("Courier New")
+                    block_cursor.setCharFormat(new_char_format)
+                    block_cursor.clearSelection()
+                
+                found = True
+                break
         
         logger.debug("Применение стилей кода выполнено")
