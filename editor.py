@@ -287,15 +287,19 @@ class MarkdownEditor:
                 if search_cursor.isNull():
                     break
                 
-                # Применяем стили
+                # Применяем стили - выделяем весь фрагмент кода
+                start_pos = search_cursor.selectionStart()
+                end_pos = search_cursor.selectionEnd()
+                search_cursor.setPosition(start_pos)
+                search_cursor.setPosition(end_pos, QTextCursor.MoveMode.KeepAnchor)
+                
                 char_format = search_cursor.charFormat()
                 new_format = QTextCharFormat(char_format)
                 new_format.setFont(monospace_font)
                 new_format.setBackground(code_bg)
-                # Для inline кода добавляем небольшой padding через пробелы в формате
-                # Но лучше использовать свойства формата
-                # Устанавливаем шрифт с фиксированной шириной
                 new_format.setFontFixedPitch(True)
+                # Принудительно устанавливаем шрифт
+                new_format.setFontFamily("Courier New")
                 search_cursor.setCharFormat(new_format)
                 break
         
