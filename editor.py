@@ -259,7 +259,11 @@ class MarkdownEditor:
             code_border = QColor("#ddd")
         
         # Моноширинный шрифт - используем фиксированный размер
-        monospace_font = QFont("Courier New", 10)
+        # Получаем текущий размер шрифта из документа
+        default_font = document.defaultFont()
+        font_size = default_font.pointSize() if default_font.pointSize() > 0 else 10
+        
+        monospace_font = QFont("Courier New", font_size)
         monospace_font.setStyleHint(QFont.StyleHint.Monospace)
         monospace_font.setFixedPitch(True)
         
