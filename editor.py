@@ -13,7 +13,7 @@ from enum import Enum
 
 from PyQt6.QtWidgets import QTextEdit
 from PyQt6.QtGui import QTextCursor, QTextCharFormat, QTextBlockFormat, QFont, QColor
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTextFormat
 import re
 
 try:
@@ -258,14 +258,14 @@ class MarkdownEditor:
             code_bg = QColor("#f5f5f5")
             code_border = QColor("#ddd")
         
-        # Моноширинный шрифт
-        monospace_font = QFont("Courier New")
+        # Моноширинный шрифт - используем фиксированный размер
+        monospace_font = QFont("Courier New", 10)
         monospace_font.setStyleHint(QFont.StyleHint.Monospace)
+        monospace_font.setFixedPitch(True)
         
         # Получаем markdown текст для поиска паттернов
         markdown_text = self.get_markdown()
         document = self.text_edit.document()
-        cursor = self.text_edit.textCursor()
         
         # Находим inline code (обратные кавычки `text`)
         inline_code_pattern = re.compile(r'`([^`\n]+)`')
@@ -278,20 +278,19 @@ class MarkdownEditor:
             # Ищем этот текст в документе
             search_cursor = QTextCursor(document)
             search_cursor.setPosition(0)
-            found = False
             while True:
                 search_cursor = document.find(code_text, search_cursor)
                 if search_cursor.isNull():
                     break
                 
-                # Проверяем, что это действительно код (можно проверить форматирование)
                 # Применяем стили
                 char_format = search_cursor.charFormat()
                 new_format = QTextCharFormat(char_format)
                 new_format.setFont(monospace_font)
                 new_format.setBackground(code_bg)
+                # Добавляем небольшой padding через изменение формата
+                # Для inline кода используем свойства символов
                 search_cursor.setCharFormat(new_format)
-                found = True
                 break
         
         # Находим блоки кода (тройные обратные кавычки ```)
@@ -304,25 +303,55 @@ class MarkdownEditor:
             block_content = match.group(0)[3:-3]  # Убираем ``` в начале и конце
             lines = block_content.split('\n')
             
-            # Ищем каждую строку блока в документе
+            # Ищем первую строку блока для определения позиции
+            if not lines or not lines[0].strip():
+                continue
+            
+            first_line = lines[0].strip()
             search_cursor = QTextCursor(document)
             search_cursor.setPosition(0)
-            for line in lines:
-                if not line.strip():
-                    continue
-                search_cursor = document.find(line, search_cursor)
-                if not search_cursor.isNull():
-                    # Применяем стили ко всей строке
-                    block_format = search_cursor.blockFormat()
+            
+            # Находим первую строку блока
+            found_block = False
+            while True:
+                search_cursor = document.find(first_line, search_cursor)
+                if search_cursor.isNull():
+                    break
+                
+                # Нашли начало блока, применяем стили ко всем строкам блока
+                block_start = search_cursor.block()
+                block = block_start
+                
+                # Применяем стили ко всем строкам блока
+                for _ in range(len(lines)):
+                    if not block.isValid():
+                        break
+                    
+                    # Создаем курсор для блока
+                    block_cursor = QTextCursor(block)
+                    block_cursor.select(QTextCursor.SelectionType.BlockUnderCursor)
+                    
+                    # Применяем формат блока с фоном и отступами
+                    block_format = block.blockFormat()
                     new_block_format = QTextBlockFormat(block_format)
                     new_block_format.setBackground(code_bg)
-                    search_cursor.setBlockFormat(new_block_format)
+                    # Добавляем отступы: слева 12px, сверху/снизу 6px
+                    new_block_format.setLeftMargin(12)
+                    new_block_format.setRightMargin(12)
+                    new_block_format.setTopMargin(6)
+                    new_block_format.setBottomMargin(6)
+                    block_cursor.setBlockFormat(new_block_format)
                     
-                    # Применяем моноширинный шрифт
-                    char_format = search_cursor.charFormat()
+                    # Применяем моноширинный шрифт ко всему блоку
+                    char_format = block_cursor.charFormat()
                     new_char_format = QTextCharFormat(char_format)
                     new_char_format.setFont(monospace_font)
-                    search_cursor.setCharFormat(new_char_format)
+                    block_cursor.setCharFormat(new_char_format)
+                    
+                    block = block.next()
+                
+                found_block = True
+                break
         
         logger.debug("Применение стилей кода выполнено")
 
