@@ -13,7 +13,7 @@ from enum import Enum
 
 from PyQt6.QtWidgets import QTextEdit
 from PyQt6.QtGui import QTextCursor, QTextCharFormat, QTextBlockFormat, QFont, QColor
-from PyQt6.QtCore import Qt, QTextFormat
+from PyQt6.QtCore import Qt
 import re
 
 try:
