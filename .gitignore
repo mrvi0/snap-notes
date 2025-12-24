@@ -25,6 +25,11 @@ build/
 dist/
 *.egg-info/
 
+# OAuth credentials (пользовательские файлы - НЕ коммитить!)
+credentials.json
+token.json
+~/.notes-google-keep/
+
 # IDE
 .vscode/
 .idea/
