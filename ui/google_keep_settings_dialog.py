@@ -92,10 +92,10 @@ class GoogleKeepSettingsDialog(QDialog):
     
     def _update_test_button_state(self):
         """Обновляет состояние кнопки теста соединения."""
-        enabled = self.enabled_checkbox.isChecked()
+        # Кнопка активна, если заполнены оба поля (независимо от чекбокса)
         has_email = bool(self.email_input.text().strip())
         has_password = bool(self.password_input.text().strip())
-        self.test_btn.setEnabled(enabled and has_email and has_password)
+        self.test_btn.setEnabled(has_email and has_password)
     
     def on_enabled_changed(self, enabled: bool):
         """Обрабатывает изменение состояния чекбокса включения."""
@@ -124,6 +124,10 @@ class GoogleKeepSettingsDialog(QDialog):
             QMessageBox.warning(self, "Ошибка", "Введите email и пароль")
             return
         
+        # Блокируем кнопку во время теста
+        self.test_btn.setEnabled(False)
+        self.test_btn.setText("Проверка...")
+        
         try:
             from services.google_keep_sync import GoogleKeepSync
             from storage.database import DatabaseManager
@@ -135,12 +139,19 @@ class GoogleKeepSettingsDialog(QDialog):
             if sync.authenticate():
                 QMessageBox.information(self, "Успех", "Соединение с Google Keep установлено успешно")
             else:
-                QMessageBox.critical(self, "Ошибка", "Не удалось подключиться к Google Keep")
+                QMessageBox.critical(self, "Ошибка", "Не удалось подключиться к Google Keep.\n\nПроверьте правильность email и пароля.\nЕсли используете двухфакторную аутентификацию, используйте токен приложения вместо пароля.")
         except ImportError:
-            QMessageBox.critical(self, "Ошибка", "Библиотека gkeepapi не установлена")
+            QMessageBox.critical(self, "Ошибка", "Библиотека gkeepapi не установлена.\n\nУстановите: pip install gkeepapi")
         except Exception as e:
-            logger.error(f"Ошибка при тестировании соединения: {e}")
-            QMessageBox.critical(self, "Ошибка", f"Ошибка подключения: {str(e)}")
+            logger.error(f"Ошибка при тестировании соединения: {e}", exc_info=True)
+            error_msg = str(e)
+            if "login" in error_msg.lower() or "auth" in error_msg.lower():
+                error_msg = f"Ошибка аутентификации: {error_msg}\n\nПроверьте правильность email и пароля.\nЕсли используете двухфакторную аутентификацию, используйте токен приложения."
+            QMessageBox.critical(self, "Ошибка", f"Ошибка подключения:\n{error_msg}")
+        finally:
+            # Восстанавливаем кнопку
+            self.test_btn.setText("Тест соединения")
+            self._update_test_button_state()
     
     def accept(self):
         """Сохраняет настройки и закрывает диалог."""
