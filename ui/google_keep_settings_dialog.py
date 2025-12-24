@@ -41,16 +41,14 @@ class GoogleKeepSettingsDialog(QDialog):
         # Email
         self.email_input = QLineEdit()
         self.email_input.setPlaceholderText("your.email@gmail.com")
-        self.email_input.setEnabled(False)
-        self.email_input.setMaximumWidth(300)
+        self.email_input.setMaximumWidth(250)
         keep_layout.addRow("Email:", self.email_input)
         
         # Пароль
         self.password_input = QLineEdit()
         self.password_input.setPlaceholderText("Пароль или токен приложения")
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
-        self.password_input.setEnabled(False)
-        self.password_input.setMaximumWidth(300)
+        self.password_input.setMaximumWidth(250)
         keep_layout.addRow("Пароль:", self.password_input)
         
         # Понижать расширенный Markdown
@@ -86,12 +84,18 @@ class GoogleKeepSettingsDialog(QDialog):
         # Подключаем сигналы
         self.enabled_checkbox.toggled.connect(self.on_enabled_changed)
     
+    def _update_test_button_state(self):
+        """Обновляет состояние кнопки теста соединения."""
+        enabled = self.enabled_checkbox.isChecked()
+        has_email = bool(self.email_input.text().strip())
+        has_password = bool(self.password_input.text().strip())
+        self.test_btn.setEnabled(enabled and has_email and has_password)
+    
     def on_enabled_changed(self, enabled: bool):
         """Обрабатывает изменение состояния чекбокса включения."""
-        self.email_input.setEnabled(enabled)
-        self.password_input.setEnabled(enabled)
+        # Поля ввода всегда активны, только кнопка теста зависит от включения
         self.downgrade_checkbox.setEnabled(enabled)
-        self.test_btn.setEnabled(enabled)
+        self._update_test_button_state()
     
     def load_settings(self):
         """Загружает настройки из объекта Settings."""
