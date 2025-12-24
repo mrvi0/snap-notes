@@ -335,7 +335,10 @@ class MarkdownEditor:
             if pre_open_count > pre_close_count:
                 # Мы внутри pre, не заменяем
                 return match.group(0)
-            return f'<code style="{code_style}">{match.group(1)}</code>'
+            code_content = match.group(1)
+            # Убираем переносы строк в начале и конце для inline code
+            code_content = code_content.strip('\n\r')
+            return f'<code style="{code_style}">{code_content}</code>'
         
         html = re.sub(
             r'<code[^>]*>(.*?)</code>',
