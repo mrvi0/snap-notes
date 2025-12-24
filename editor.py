@@ -288,8 +288,10 @@ class MarkdownEditor:
                 new_format = QTextCharFormat(char_format)
                 new_format.setFont(monospace_font)
                 new_format.setBackground(code_bg)
-                # Добавляем небольшой padding через изменение формата
-                # Для inline кода используем свойства символов
+                # Для inline кода добавляем небольшой padding через пробелы в формате
+                # Но лучше использовать свойства формата
+                # Устанавливаем шрифт с фиксированной шириной
+                new_format.setFontFixedPitch(True)
                 search_cursor.setCharFormat(new_format)
                 break
         
