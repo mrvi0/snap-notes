@@ -19,12 +19,11 @@ from PyQt6.QtGui import (
 from PyQt6.QtCore import Qt, QTimer
 
 from models import Note
-from database import DatabaseManager
-from sync_manager import SyncManager
-from settings import Settings
-from themes import get_theme
+from storage import DatabaseManager
+from services import SyncManager
+from utils import Settings, get_theme
 from settings_dialog import SettingsDialog
-from editor import MarkdownEditor, EditorMode
+from components import MarkdownEditor, EditorMode
 from ui import LinkIconTextEdit, ConflictDialog
 
 logger = logging.getLogger(__name__)
