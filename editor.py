@@ -55,6 +55,7 @@ class MarkdownEditor:
         self.text_edit = text_edit
         self.mode = EditorMode.RAW  # По умолчанию RAW режим
         self.is_dark_theme = is_dark_theme
+        self._current_markdown = ""  # Храним оригинальный Markdown текст
         self._setup_editor()
         
         # Инициализируем Markdown конвертер
@@ -122,11 +123,14 @@ class MarkdownEditor:
             Текст в формате Markdown
         """
         if self.mode == EditorMode.RAW:
-            return self.text_edit.toPlainText()
+            # В RAW режиме берем текст напрямую и обновляем сохраненное значение
+            markdown_text = self.text_edit.toPlainText()
+            self._current_markdown = markdown_text
+            return markdown_text
         else:
-            # В визуальном режиме получаем markdown
-            # PyQt6 QTextEdit имеет встроенный метод toMarkdown
-            return self.text_edit.toMarkdown()
+            # В VISUAL режиме возвращаем сохраненный Markdown
+            # НЕ используем toMarkdown(), так как это может исказить текст
+            return self._current_markdown
     
     def set_markdown(self, markdown_text: str) -> None:
         """
