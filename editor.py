@@ -53,7 +53,7 @@ class MarkdownEditor:
             is_dark_theme: True если используется темная тема
         """
         self.text_edit = text_edit
-        self.mode = EditorMode.VISUAL
+        self.mode = EditorMode.RAW  # По умолчанию RAW режим
         self.is_dark_theme = is_dark_theme
         self._setup_editor()
         
