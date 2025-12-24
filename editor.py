@@ -108,6 +108,8 @@ class MarkdownEditor:
             self.text_edit.setHtml(html_content)
         else:
             # В raw режиме показываем сохраненный Markdown текст
+            # Разрешаем редактирование в RAW режиме
+            self.text_edit.setReadOnly(False)
             self.text_edit.setPlainText(self._current_markdown)
             
             # Устанавливаем обычный шрифт для всего текста в RAW режиме
