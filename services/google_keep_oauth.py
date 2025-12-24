@@ -24,11 +24,6 @@ logger = logging.getLogger(__name__)
 # Scopes для доступа к Google Keep
 SCOPES = ['https://www.googleapis.com/auth/keep']
 
-# OAuth 2.0 Client ID для desktop приложения
-# Это стандартный client ID для OAuth 2.0 desktop apps от Google
-CLIENT_ID = "1072941405499-v8p1sap30c3t4kf5q2q2q2q2q2q2q2q2.apps.googleusercontent.com"
-CLIENT_SECRET = "GOCSPX-2q2q2q2q2q2q2q2q2q2q2q2q2q2q2q2"
-
 
 class GoogleKeepOAuth:
     """Класс для OAuth 2.0 аутентификации с Google Keep."""
