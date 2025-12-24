@@ -11,7 +11,7 @@ from typing import Optional
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QListWidget,
     QTextEdit, QLineEdit, QPushButton, QLabel, QMessageBox, QDialog,
-    QDialogButtonBox, QListWidgetItem, QMenuBar, QMenu, QToolBar, QCheckBox
+    QDialogButtonBox, QListWidgetItem, QMenuBar, QMenu, QToolBar
 )
 from PyQt6.QtGui import (
     QFont, QIcon, QTextCursor, QKeyEvent, QAction, QResizeEvent
@@ -214,15 +214,13 @@ class NotesMainWindow(QMainWindow):
         
         toolbar_layout.addStretch()
         
-        # Переключатель режимов (iOS-style toggle)
-        self.mode_label = QLabel("Visual")
-        toolbar_layout.addWidget(self.mode_label)
-        
-        self.mode_toggle = QCheckBox()
-        self.mode_toggle.setObjectName("mode_toggle")
+        # Переключатель режимов
+        self.mode_toggle = QPushButton("MD")
+        self.mode_toggle.setObjectName("format_button")
+        self.mode_toggle.setCheckable(True)
         self.mode_toggle.setChecked(False)  # По умолчанию Raw режим
         self.mode_toggle.setToolTip("Переключить режим (Visual/Raw Markdown)")
-        self.mode_toggle.toggled.connect(self.toggle_editor_mode)
+        self.mode_toggle.clicked.connect(self.toggle_editor_mode)
         toolbar_layout.addWidget(self.mode_toggle)
         
         layout.addWidget(self.format_toolbar)
@@ -319,6 +317,17 @@ class NotesMainWindow(QMainWindow):
         appearance_action.triggered.connect(self.show_settings)
         settings_menu.addAction(appearance_action)
     
+    def _darken_color(self, hex_color: str, factor: float = 0.9) -> str:
+        """Затемняет цвет для hover эффекта."""
+        hex_color = hex_color.lstrip('#')
+        r = int(hex_color[0:2], 16)
+        g = int(hex_color[2:4], 16)
+        b = int(hex_color[4:6], 16)
+        r = int(r * factor)
+        g = int(g * factor)
+        b = int(b * factor)
+        return f"#{r:02x}{g:02x}{b:02x}"
+    
     def toggle_editor_mode(self, checked: bool):
         """
         Переключает режим редактора между Visual и Raw Markdown.
@@ -346,6 +355,8 @@ class NotesMainWindow(QMainWindow):
             # Отключаем иконки ссылок в RAW режиме
             if hasattr(self.content_input, 'set_visual_mode'):
                 self.content_input.set_visual_mode(False)
+            # Обновляем стиль кнопки MD
+            self.apply_theme()
     
     def on_add_note(self):
         """Создает новую заметку."""
@@ -627,6 +638,34 @@ class NotesMainWindow(QMainWindow):
         font_size = self.settings.get('font_size', 12)
         theme_css = get_theme(theme_name, button_color, font_size)
         self.setStyleSheet(theme_css)
+        
+        # Обновляем стиль кнопки MD в зависимости от режима
+        if hasattr(self, 'mode_toggle'):
+            if self.mode_toggle.isChecked():
+                # Visual режим - окрашиваем в выбранный цвет
+                self.mode_toggle.setStyleSheet(f"""
+                    QPushButton#format_button {{
+                        background-color: {button_color};
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        padding: 6px 8px;
+                        font-size: 11pt;
+                        min-width: 32px;
+                        min-height: 32px;
+                        max-width: 32px;
+                        max-height: 32px;
+                    }}
+                    QPushButton#format_button:hover {{
+                        background-color: {self._darken_color(button_color)};
+                    }}
+                    QPushButton#format_button:pressed {{
+                        background-color: {self._darken_color(button_color, 0.85)};
+                    }}
+                """)
+            else:
+                # Raw режим - прозрачная кнопка
+                self.mode_toggle.setStyleSheet("")
         
         # Обновляем тему в редакторе
         if hasattr(self, 'editor'):

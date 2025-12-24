@@ -90,25 +90,6 @@ QWidget#format_toolbar {
     background-color: #fafafa;
     border-bottom: 1px solid #e0e0e0;
 }
-/* iOS-style toggle switch */
-QCheckBox#mode_toggle {
-    spacing: 0;
-}
-QCheckBox#mode_toggle::indicator {
-    width: 51px;
-    height: 31px;
-    border-radius: 15.5px;
-    background-color: #e0e0e0;
-    border: none;
-}
-QCheckBox#mode_toggle::indicator:checked {
-    background-color: #34c759;
-    image: none;
-}
-QCheckBox#mode_toggle::indicator:unchecked {
-    background-color: #e0e0e0;
-    image: none;
-}
 QListWidget {
     background-color: #f5f5f5;
     border: none;
@@ -338,25 +319,6 @@ QWidget#markdown_bar {
 QWidget#format_toolbar {
     background-color: #1e1e1e;
     border-bottom: 1px solid #2a2a2a;
-}
-/* iOS-style toggle switch for dark theme */
-QCheckBox#mode_toggle {
-    spacing: 0;
-}
-QCheckBox#mode_toggle::indicator {
-    width: 51px;
-    height: 31px;
-    border-radius: 15.5px;
-    background-color: #555;
-    border: none;
-}
-QCheckBox#mode_toggle::indicator:checked {
-    background-color: #34c759;
-    image: none;
-}
-QCheckBox#mode_toggle::indicator:unchecked {
-    background-color: #555;
-    image: none;
 }
 QListWidget {
     background-color: #1e1e1e;
