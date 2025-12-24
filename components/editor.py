@@ -303,7 +303,7 @@ class MarkdownEditor:
             html = self.text_edit.toHtml()
         
         # Логируем для отладки
-        logger.debug(f"HTML before processing: {html[:200]}")
+        logger.debug(f"HTML before processing: {html[:500]}")
         
         # ВАЖНО: QTextEdit может игнорировать CSS из <style>, поэтому применяем ВСЕ стили напрямую в inline стилях
         # Определяем стили ДО использования в функциях
@@ -311,7 +311,7 @@ class MarkdownEditor:
         pre_style = f'background-color: {code_bg}; padding: 12px; border-radius: 4px; border-left: 3px solid {code_border}; font-family: \'Courier New\', monospace; white-space: pre-wrap; overflow-x: auto; display: block; margin: 0;'
         pre_code_style = 'background-color: transparent; padding: 0; border-radius: 0; display: block;'
         
-        # Сначала обрабатываем блоки <pre><code> с атрибутами или без
+        # Сначала обрабатываем блоки <pre><code> с любыми атрибутами (включая class="codehilite" и class="language-*")
         def process_pre_code(match):
             code_content = match.group(1)
             # Убираем только пустые строки в начале и конце, но сохраняем переносы строк внутри
@@ -335,9 +335,10 @@ class MarkdownEditor:
             code_content_escaped = escape(code_content)
             code_content_escaped = code_content_escaped.replace('\n', '<br>')
             return f'<pre style="{pre_style}"><code style="{pre_code_style}">{code_content_escaped}</code></pre>'
-        # Обрабатываем <pre><code> с любыми атрибутами (включая class="language-*")
+        # Обрабатываем <pre><code> с любыми атрибутами (включая class="codehilite" и class="language-*")
+        # Важно: обрабатываем <pre> с атрибутами, затем <code> с атрибутами
         html = re.sub(
-            r'<pre><code[^>]*>(.*?)</code></pre>',
+            r'<pre[^>]*><code[^>]*>(.*?)</code></pre>',
             process_pre_code,
             html,
             flags=re.DOTALL
