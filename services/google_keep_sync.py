@@ -58,13 +58,38 @@ class GoogleKeepSync:
             True если аутентификация успешна
         """
         try:
-            # Используем новый метод authenticate вместо устаревшего login
-            self.keep.authenticate(self.email, self.password)
-            self._authenticated = True
-            logger.info("Успешная аутентификация в Google Keep")
-            return True
+            # Убираем все пробелы из токена (Google выдает токен с пробелами, но нужен без них)
+            password_clean = self.password.replace(' ', '').strip()
+            
+            logger.info(f"Попытка аутентификации для email: {self.email}")
+            logger.debug(f"Длина токена: {len(password_clean)} символов")
+            
+            # Пробуем сначала authenticate (новый метод)
+            try:
+                self.keep.authenticate(self.email, password_clean)
+                self._authenticated = True
+                logger.info("Успешная аутентификация в Google Keep через authenticate()")
+                return True
+            except Exception as auth_error:
+                logger.warning(f"authenticate() не сработал: {auth_error}, пробуем login()")
+                # Если authenticate не работает, пробуем старый метод login
+                try:
+                    self.keep.login(self.email, password_clean)
+                    self._authenticated = True
+                    logger.info("Успешная аутентификация в Google Keep через login()")
+                    return True
+                except Exception as login_error:
+                    logger.error(f"login() также не сработал: {login_error}")
+                    raise auth_error  # Выбрасываем оригинальную ошибку
+                    
         except Exception as e:
-            logger.error(f"Ошибка аутентификации в Google Keep: {e}")
+            # Проверяем, является ли это ошибкой аутентификации
+            error_str = str(e).lower()
+            error_code = e.code if hasattr(e, 'code') else None
+            if 'badauthentication' in error_str or 'login' in error_str or 'auth' in error_str:
+                logger.error(f"Ошибка аутентификации в Google Keep: {e}, код: {error_code}")
+            else:
+                logger.error(f"Неожиданная ошибка при аутентификации в Google Keep: {e}", exc_info=True)
             self._authenticated = False
             return False
     

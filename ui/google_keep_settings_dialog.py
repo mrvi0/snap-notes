@@ -131,6 +131,12 @@ class GoogleKeepSettingsDialog(QDialog):
             QMessageBox.warning(self, "Ошибка", "Введите email и токен приложения")
             return
         
+        # Убираем пробелы из токена (Google выдает с пробелами, но нужен без них)
+        password_clean = password.replace(' ', '').strip()
+        
+        # Логируем для отладки (без показа пароля)
+        logger.info(f"Тест соединения для email: {email}, длина токена: {len(password_clean)}")
+        
         # Блокируем кнопку во время теста
         self.test_btn.setEnabled(False)
         self.test_btn.setText("Проверка...")
@@ -139,9 +145,9 @@ class GoogleKeepSettingsDialog(QDialog):
             from services.google_keep_sync import GoogleKeepSync
             from storage.database import DatabaseManager
             
-            # Создаем временный экземпляр для теста
+            # Создаем временный экземпляр для теста (используем очищенный токен)
             db_manager = DatabaseManager()
-            sync = GoogleKeepSync(db_manager, email, password)
+            sync = GoogleKeepSync(db_manager, email, password_clean)
             
             if sync.authenticate():
                 QMessageBox.information(self, "Успех", "Соединение с Google Keep установлено успешно")
