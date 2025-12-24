@@ -351,7 +351,8 @@ class MarkdownEditor:
             code_content = match.group(1)
             # Убираем переносы строк в начале и конце для inline code
             code_content = code_content.strip('\n\r')
-            return f'<code style="{code_style}">{code_content}</code>'
+            # Применяем inline стили напрямую
+            return f'<code style="{inline_code_style}">{code_content}</code>'
         
         html = re.sub(
             r'<code[^>]*>(.*?)</code>',
