@@ -267,13 +267,13 @@ class MarkdownEditor:
             text_color = "#212121"
         
         # Конвертируем Markdown в HTML
-        if self.md:
+        if hasattr(self, 'md') and self.md:
             try:
-                html = markdown_lib.markdown(
-                    markdown_text,
-                    extensions=['fenced_code', 'codehilite', 'nl2br']
-                )
-            except:
+                # Сбрасываем состояние конвертера
+                self.md.reset()
+                html = self.md.convert(markdown_text)
+            except Exception as e:
+                logger.error(f"Ошибка конвертации Markdown: {e}")
                 # Fallback на встроенный метод PyQt6
                 self.text_edit.setMarkdown(markdown_text)
                 html = self.text_edit.toHtml()
