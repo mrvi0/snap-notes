@@ -59,9 +59,10 @@ class MarkdownEditor:
         self._setup_editor()
         
         # Инициализируем Markdown конвертер
+        # Используем только fenced_code, без codehilite, чтобы избежать проблем с HTML-атрибутами
         try:
             import markdown
-            self.md = markdown.Markdown(extensions=['fenced_code', 'codehilite'])
+            self.md = markdown.Markdown(extensions=['fenced_code'])
         except ImportError:
             self.md = None
             logger.warning("Библиотека markdown не установлена, используется встроенный setMarkdown")
