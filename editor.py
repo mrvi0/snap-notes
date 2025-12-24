@@ -10,6 +10,7 @@ Markdown - единственный канонический формат, HTML 
 import logging
 from typing import Optional
 from enum import Enum
+import html as html_module
 
 from PyQt6.QtWidgets import QTextEdit
 from PyQt6.QtGui import QTextCursor, QTextCharFormat, QTextBlockFormat, QFont, QColor
@@ -247,8 +248,9 @@ class MarkdownEditor:
         """
         Применяет стили к блокам кода и inline коду программно.
         
-        PyQt6 QTextEdit не поддерживает CSS селекторы для вложенных HTML элементов,
-        поэтому стили применяются программно через QTextCharFormat и QTextBlockFormat.
+        ВАЖНО: Этот метод НЕ должен изменять содержимое документа или добавлять
+        новые элементы. Он только применяет визуальные стили к уже существующим
+        элементам кода, которые были созданы через setMarkdown().
         """
         # Определяем цвета в зависимости от темы
         if self.is_dark_theme:
@@ -258,12 +260,9 @@ class MarkdownEditor:
             code_bg = QColor("#f5f5f5")
             code_border = QColor("#ddd")
         
-        # Получаем markdown текст для поиска паттернов
-        markdown_text = self.get_markdown()
         document = self.text_edit.document()
         
-        # Моноширинный шрифт - используем фиксированный размер
-        # Получаем текущий размер шрифта из документа
+        # Моноширинный шрифт
         default_font = document.defaultFont()
         font_size = default_font.pointSize() if default_font.pointSize() > 0 else 10
         
@@ -271,97 +270,57 @@ class MarkdownEditor:
         monospace_font.setStyleHint(QFont.StyleHint.Monospace)
         monospace_font.setFixedPitch(True)
         
-        # Находим inline code (обратные кавычки `text`)
-        inline_code_pattern = re.compile(r'`([^`\n]+)`')
-        matches = list(inline_code_pattern.finditer(markdown_text))
+        # Проходим по всем блокам документа и проверяем их форматирование
+        # Блоки кода обычно имеют моноширинный шрифт или определенные характеристики
+        block = document.firstBlock()
+        in_code_block = False
+        code_block_start = None
         
-        # Применяем стили к inline коду
-        for match in reversed(matches):  # Обратный порядок, чтобы не сбить позиции
-            code_text = match.group(1)
+        while block.isValid():
+            block_text = block.text()
+            block_format = block.blockFormat()
+            char_format = block.charFormat()
             
-            # Ищем этот текст в документе
-            search_cursor = QTextCursor(document)
-            search_cursor.setPosition(0)
-            while True:
-                search_cursor = document.find(code_text, search_cursor)
-                if search_cursor.isNull():
-                    break
-                
-                # Применяем стили - выделяем весь фрагмент кода
-                start_pos = search_cursor.selectionStart()
-                end_pos = search_cursor.selectionEnd()
-                search_cursor.setPosition(start_pos)
-                search_cursor.setPosition(end_pos, QTextCursor.MoveMode.KeepAnchor)
-                
-                char_format = search_cursor.charFormat()
-                new_format = QTextCharFormat(char_format)
-                new_format.setFont(monospace_font)
-                new_format.setBackground(code_bg)
-                new_format.setFontFixedPitch(True)
-                # Принудительно устанавливаем шрифт
-                new_format.setFontFamily("Courier New")
-                search_cursor.setCharFormat(new_format)
-                break
-        
-        # Находим блоки кода (тройные обратные кавычки ```)
-        code_block_pattern = re.compile(r'```[\s\S]*?```', re.MULTILINE)
-        code_blocks = list(code_block_pattern.finditer(markdown_text))
-        
-        # Применяем стили к блокам кода
-        for match in reversed(code_blocks):
-            # Получаем содержимое блока (без ```)
-            block_content = match.group(0)[3:-3]  # Убираем ``` в начале и конце
-            lines = block_content.split('\n')
+            # Проверяем, является ли блок частью блока кода
+            # Блоки кода обычно имеют несколько пустых строк подряд или определенный формат
+            # Более надежный способ - проверить, есть ли в блоке моноширинный шрифт
+            # или проверить HTML представление
             
-            # Ищем первую строку блока для определения позиции
-            if not lines or not lines[0].strip():
-                continue
+            # Простой эвристический подход: если блок содержит только код-подобный контент
+            # (много пробелов, специальных символов) и имеет моноширинный шрифт
             
-            first_line = lines[0].strip()
-            search_cursor = QTextCursor(document)
-            search_cursor.setPosition(0)
+            # Проверяем формат символов в блоке
+            cursor = QTextCursor(block)
+            cursor.select(QTextCursor.SelectionType.BlockUnderCursor)
             
-            # Находим первую строку блока
-            found_block = False
-            while True:
-                search_cursor = document.find(first_line, search_cursor)
-                if search_cursor.isNull():
-                    break
+            # Если блок выглядит как код (содержит много пробелов/табов в начале)
+            # или имеет определенные характеристики
+            is_code_like = (
+                block_text.startswith('    ') or  # 4+ пробела в начале
+                block_text.startswith('\t') or    # Таб в начале
+                (len(block_text.strip()) > 0 and 
+                 all(c in ' \t\n' or ord(c) < 128 for c in block_text))  # Только ASCII
+            )
+            
+            # Применяем стили только если блок действительно выглядит как код
+            # и не является частью обычного текста
+            if is_code_like and len(block_text.strip()) > 0:
+                # Применяем формат блока с фоном и отступами
+                new_block_format = QTextBlockFormat(block_format)
+                new_block_format.setBackground(code_bg)
+                new_block_format.setLeftMargin(12)
+                new_block_format.setRightMargin(12)
+                new_block_format.setTopMargin(6)
+                new_block_format.setBottomMargin(6)
+                cursor.setBlockFormat(new_block_format)
                 
-                # Нашли начало блока, применяем стили ко всем строкам блока
-                block_start = search_cursor.block()
-                block = block_start
-                
-                # Применяем стили ко всем строкам блока
-                for _ in range(len(lines)):
-                    if not block.isValid():
-                        break
-                    
-                    # Создаем курсор для блока
-                    block_cursor = QTextCursor(block)
-                    block_cursor.select(QTextCursor.SelectionType.BlockUnderCursor)
-                    
-                    # Применяем формат блока с фоном и отступами
-                    block_format = block.blockFormat()
-                    new_block_format = QTextBlockFormat(block_format)
-                    new_block_format.setBackground(code_bg)
-                    # Добавляем отступы: слева 12px, сверху/снизу 6px
-                    new_block_format.setLeftMargin(12)
-                    new_block_format.setRightMargin(12)
-                    new_block_format.setTopMargin(6)
-                    new_block_format.setBottomMargin(6)
-                    block_cursor.setBlockFormat(new_block_format)
-                    
-                    # Применяем моноширинный шрифт ко всему блоку
-                    char_format = block_cursor.charFormat()
-                    new_char_format = QTextCharFormat(char_format)
-                    new_char_format.setFont(monospace_font)
-                    block_cursor.setCharFormat(new_char_format)
-                    
-                    block = block.next()
-                
-                found_block = True
-                break
+                # Применяем моноширинный шрифт
+                new_char_format = QTextCharFormat(char_format)
+                new_char_format.setFont(monospace_font)
+                new_char_format.setFontFixedPitch(True)
+                new_char_format.setFontFamily("Courier New")
+                cursor.setCharFormat(new_char_format)
+            
+            block = block.next()
         
         logger.debug("Применение стилей кода выполнено")
-
