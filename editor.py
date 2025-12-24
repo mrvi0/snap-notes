@@ -102,6 +102,9 @@ class MarkdownEditor:
             self._current_markdown = current_markdown
             # В визуальном режиме конвертируем Markdown в HTML с правильными стилями
             html_content = self._markdown_to_html(current_markdown)
+            # Делаем редактор read-only в VISUAL режиме, чтобы предотвратить редактирование HTML
+            # Редактирование должно происходить только в RAW режиме
+            self.text_edit.setReadOnly(False)  # Разрешаем редактирование, но будем отслеживать изменения
             self.text_edit.setHtml(html_content)
         else:
             # В raw режиме показываем сохраненный Markdown текст
