@@ -172,6 +172,27 @@ QTextEdit {
     line-height: 1.6;
     padding: 20px 30px;
 }
+/* Стили для inline кода в светлой теме */
+QTextEdit code {
+    font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+    background-color: #f5f5f5;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+/* Стили для блоков кода в светлой теме */
+QTextEdit pre {
+    font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+    background-color: #f5f5f5;
+    padding: 12px;
+    border-radius: 4px;
+    border-left: 3px solid #ddd;
+    white-space: pre-wrap;
+}
+QTextEdit pre code {
+    background-color: transparent;
+    padding: 0;
+    border-radius: 0;
+}
 QLabel {
     color: #212121;
 }
@@ -373,6 +394,27 @@ QTextEdit {
     font-size: {font_size}pt;
     line-height: 1.6;
     padding: 20px 30px;
+}
+/* Стили для inline кода в темной теме */
+QTextEdit code {
+    font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+    background-color: #2a2a2a;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+/* Стили для блоков кода в темной теме */
+QTextEdit pre {
+    font-family: 'Courier New', 'Monaco', 'Consolas', monospace;
+    background-color: #2a2a2a;
+    padding: 12px;
+    border-radius: 4px;
+    border-left: 3px solid #444;
+    white-space: pre-wrap;
+}
+QTextEdit pre code {
+    background-color: transparent;
+    padding: 0;
+    border-radius: 0;
 }
 QLabel {
     color: #e0e0e0;
