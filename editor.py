@@ -330,7 +330,9 @@ class MarkdownEditor:
                 lines_final = [line.rstrip() for line in lines_final]
                 code_content = '\n'.join(lines_final)
             # Применяем inline стили напрямую в элементах
-            # ВАЖНО: используем HTML entities для кавычек в стилях
+            # Экранируем HTML entities в содержимом кода
+            from html import escape
+            code_content = escape(code_content)
             return f'<pre style="{pre_style}"><code style="{pre_code_style}">{code_content}</code></pre>'
         html = re.sub(
             r'<pre><code[^>]*>(.*?)</code></pre>',
