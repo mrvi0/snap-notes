@@ -317,6 +317,10 @@ class NotesMainWindow(QMainWindow):
         appearance_action = QAction("Внешний вид", self)
         appearance_action.triggered.connect(self.show_settings)
         settings_menu.addAction(appearance_action)
+        
+        keep_sync_action = QAction("Синхронизация Google Keep", self)
+        keep_sync_action.triggered.connect(self.show_google_keep_settings)
+        settings_menu.addAction(keep_sync_action)
     
     def _darken_color(self, hex_color: str, factor: float = 0.9) -> str:
         """Затемняет цвет для hover эффекта."""
