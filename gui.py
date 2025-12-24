@@ -789,3 +789,12 @@ class NotesMainWindow(QMainWindow):
         font_size = self.settings.get('font_size', 12)
         theme_css = get_theme(theme_name, button_color, font_size)
         self.setStyleSheet(theme_css)
+        
+        # Обновляем тему в редакторе
+        if hasattr(self, 'editor'):
+            is_dark = (theme_name == 'dark')
+            self.editor.is_dark_theme = is_dark
+            # Переприменяем стили кода, если редактор в визуальном режиме
+            if self.editor.mode == EditorMode.VISUAL:
+                from PyQt6.QtCore import QTimer
+                QTimer.singleShot(50, self.editor._apply_code_styling)
