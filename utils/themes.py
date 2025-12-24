@@ -90,6 +90,44 @@ QWidget#format_toolbar {
     background-color: #fafafa;
     border-bottom: 1px solid #e0e0e0;
 }
+/* iOS-style toggle switch */
+QCheckBox#mode_toggle {
+    width: 51px;
+    height: 31px;
+}
+QCheckBox#mode_toggle::indicator {
+    width: 51px;
+    height: 31px;
+    border-radius: 15.5px;
+    background-color: #e0e0e0;
+    border: none;
+}
+QCheckBox#mode_toggle::indicator:checked {
+    background-color: #34c759;
+}
+QCheckBox#mode_toggle::indicator:unchecked {
+    background-color: #e0e0e0;
+}
+QCheckBox#mode_toggle::indicator:checked:after {
+    content: "";
+    position: absolute;
+    width: 27px;
+    height: 27px;
+    border-radius: 13.5px;
+    background-color: white;
+    left: 22px;
+    top: 2px;
+}
+QCheckBox#mode_toggle::indicator:unchecked:after {
+    content: "";
+    position: absolute;
+    width: 27px;
+    height: 27px;
+    border-radius: 13.5px;
+    background-color: white;
+    left: 2px;
+    top: 2px;
+}
 QListWidget {
     background-color: #f5f5f5;
     border: none;
@@ -319,6 +357,44 @@ QWidget#markdown_bar {
 QWidget#format_toolbar {
     background-color: #1e1e1e;
     border-bottom: 1px solid #2a2a2a;
+}
+/* iOS-style toggle switch for dark theme */
+QCheckBox#mode_toggle {
+    width: 51px;
+    height: 31px;
+}
+QCheckBox#mode_toggle::indicator {
+    width: 51px;
+    height: 31px;
+    border-radius: 15.5px;
+    background-color: #555;
+    border: none;
+}
+QCheckBox#mode_toggle::indicator:checked {
+    background-color: #34c759;
+}
+QCheckBox#mode_toggle::indicator:unchecked {
+    background-color: #555;
+}
+QCheckBox#mode_toggle::indicator:checked:after {
+    content: "";
+    position: absolute;
+    width: 27px;
+    height: 27px;
+    border-radius: 13.5px;
+    background-color: white;
+    left: 22px;
+    top: 2px;
+}
+QCheckBox#mode_toggle::indicator:unchecked:after {
+    content: "";
+    position: absolute;
+    width: 27px;
+    height: 27px;
+    border-radius: 13.5px;
+    background-color: white;
+    left: 2px;
+    top: 2px;
 }
 QListWidget {
     background-color: #1e1e1e;
@@ -596,6 +672,10 @@ QTextEdit pre code {{
     background-color: transparent;
     padding: 0;
     border-radius: 0;
+}}
+/* Стили для label рядом с toggle */
+QLabel {{
+    font-size: {font_size}pt;
 }}
 """
     

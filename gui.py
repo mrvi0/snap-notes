@@ -11,7 +11,7 @@ from typing import Optional
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QListWidget,
     QTextEdit, QLineEdit, QPushButton, QLabel, QMessageBox, QDialog,
-    QDialogButtonBox, QListWidgetItem, QMenuBar, QMenu, QToolBar
+    QDialogButtonBox, QListWidgetItem, QMenuBar, QMenu, QToolBar, QCheckBox
 )
 from PyQt6.QtGui import (
     QFont, QIcon, QTextCursor, QKeyEvent, QAction, QResizeEvent
@@ -214,13 +214,15 @@ class NotesMainWindow(QMainWindow):
         
         toolbar_layout.addStretch()
         
-        # Переключатель режимов
-        self.mode_toggle = QPushButton("Raw")
-        self.mode_toggle.setObjectName("format_button")
-        self.mode_toggle.setCheckable(True)
+        # Переключатель режимов (iOS-style toggle)
+        self.mode_label = QLabel("Visual")
+        toolbar_layout.addWidget(self.mode_label)
+        
+        self.mode_toggle = QCheckBox()
+        self.mode_toggle.setObjectName("mode_toggle")
         self.mode_toggle.setChecked(False)  # По умолчанию Raw режим
         self.mode_toggle.setToolTip("Переключить режим (Visual/Raw Markdown)")
-        self.mode_toggle.clicked.connect(self.toggle_editor_mode)
+        self.mode_toggle.toggled.connect(self.toggle_editor_mode)
         toolbar_layout.addWidget(self.mode_toggle)
         
         layout.addWidget(self.format_toolbar)
@@ -326,7 +328,6 @@ class NotesMainWindow(QMainWindow):
         """
         if checked:
             self.editor.set_mode(EditorMode.VISUAL)
-            self.mode_toggle.setText("Visual")
             # В визуальном режиме применяем обычные стили из темы
             self.apply_theme()  # Переприменяем тему для восстановления стилей
             # Обновляем режим для отображения иконок ссылок
@@ -334,7 +335,6 @@ class NotesMainWindow(QMainWindow):
                 self.content_input.set_visual_mode(True)
         else:
             self.editor.set_mode(EditorMode.RAW)
-            self.mode_toggle.setText("Raw")
             # В RAW режиме применяем стиль для обычного текста (не жирный, обычный размер)
             font_size = self.settings.get('font_size', 12)
             self.content_input.setStyleSheet(f"""
