@@ -157,8 +157,8 @@ class GoogleKeepSync:
         
         try:
             for note in notes:
-                # Конвертируем Markdown в plain text
-                keep_text = self._markdown_to_keep_text(note.markdown_content, downgrade_extended)
+                # Отправляем Markdown как есть, без изменений
+                keep_text = self._markdown_to_keep_text(note.markdown_content)
                 
                 # Создаем или обновляем заметку в Google Keep
                 # TODO: реализовать обновление существующих заметок по keep_id
