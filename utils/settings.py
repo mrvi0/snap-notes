@@ -27,6 +27,12 @@ class Settings:
             "auto_save": {
                 "enabled": True,
                 "delay": 1000  # миллисекунды
+            },
+            "google_keep": {
+                "enabled": False,
+                "email": "",
+                "password": "",
+                "downgrade_extended": True  # Понижать расширенный markdown до safe-уровня
             }
         }
         self.load()
