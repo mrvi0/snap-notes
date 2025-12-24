@@ -46,7 +46,7 @@ class LinkIconTextEdit(QTextEdit):
         self.link_icons = {}  # {link_url: icon_rect}
         self.icon_size = 16
         self.icon_padding = 4
-        self._is_visual_mode = True
+        self._is_visual_mode = False  # По умолчанию Raw режим
         
         # Создаем иконку для ссылки (стрелка в новую вкладку)
         self.link_icon = self._create_link_icon()
