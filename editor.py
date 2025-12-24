@@ -311,8 +311,7 @@ class MarkdownEditor:
         # Убираем лишние переносы строк в конце
         def process_pre_code(match):
             code_content = match.group(1)
-            # Убираем переносы строк в начале и конце, но сохраняем внутренние
-            # Используем более агрессивную очистку
+            # Более агрессивная очистка: убираем все пустые строки в начале и конце
             lines = code_content.split('\n')
             # Убираем пустые строки в начале
             while lines and not lines[0].strip():
@@ -321,6 +320,11 @@ class MarkdownEditor:
             while lines and not lines[-1].strip():
                 lines.pop()
             code_content = '\n'.join(lines)
+            # Убираем также возможные пробелы и табы в конце последней строки
+            if code_content:
+                lines_final = code_content.split('\n')
+                lines_final = [line.rstrip() for line in lines_final]
+                code_content = '\n'.join(lines_final)
             return f'<pre style="{pre_code_style}"><code>{code_content}</code></pre>'
         
         pre_code_style = f'background-color: {code_bg}; padding: 12px !important; border-radius: 4px; border-left: 3px solid {code_border}; font-family: "Courier New", monospace !important; white-space: pre-wrap; overflow-x: auto; display: block; margin: 0;'
