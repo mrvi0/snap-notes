@@ -92,8 +92,7 @@ QWidget#format_toolbar {
 }
 /* iOS-style toggle switch */
 QCheckBox#mode_toggle {
-    width: 51px;
-    height: 31px;
+    spacing: 0;
 }
 QCheckBox#mode_toggle::indicator {
     width: 51px;
@@ -104,29 +103,11 @@ QCheckBox#mode_toggle::indicator {
 }
 QCheckBox#mode_toggle::indicator:checked {
     background-color: #34c759;
+    image: none;
 }
 QCheckBox#mode_toggle::indicator:unchecked {
     background-color: #e0e0e0;
-}
-QCheckBox#mode_toggle::indicator:checked:after {
-    content: "";
-    position: absolute;
-    width: 27px;
-    height: 27px;
-    border-radius: 13.5px;
-    background-color: white;
-    left: 22px;
-    top: 2px;
-}
-QCheckBox#mode_toggle::indicator:unchecked:after {
-    content: "";
-    position: absolute;
-    width: 27px;
-    height: 27px;
-    border-radius: 13.5px;
-    background-color: white;
-    left: 2px;
-    top: 2px;
+    image: none;
 }
 QListWidget {
     background-color: #f5f5f5;
@@ -360,8 +341,7 @@ QWidget#format_toolbar {
 }
 /* iOS-style toggle switch for dark theme */
 QCheckBox#mode_toggle {
-    width: 51px;
-    height: 31px;
+    spacing: 0;
 }
 QCheckBox#mode_toggle::indicator {
     width: 51px;
@@ -372,29 +352,11 @@ QCheckBox#mode_toggle::indicator {
 }
 QCheckBox#mode_toggle::indicator:checked {
     background-color: #34c759;
+    image: none;
 }
 QCheckBox#mode_toggle::indicator:unchecked {
     background-color: #555;
-}
-QCheckBox#mode_toggle::indicator:checked:after {
-    content: "";
-    position: absolute;
-    width: 27px;
-    height: 27px;
-    border-radius: 13.5px;
-    background-color: white;
-    left: 22px;
-    top: 2px;
-}
-QCheckBox#mode_toggle::indicator:unchecked:after {
-    content: "";
-    position: absolute;
-    width: 27px;
-    height: 27px;
-    border-radius: 13.5px;
-    background-color: white;
-    left: 2px;
-    top: 2px;
+    image: none;
 }
 QListWidget {
     background-color: #1e1e1e;
