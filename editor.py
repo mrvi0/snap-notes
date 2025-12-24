@@ -84,20 +84,28 @@ class MarkdownEditor:
         if self.mode == mode:
             return
         
-        # Получаем текущий markdown-текст
-        current_markdown = self.get_markdown()
+        # Получаем текущий markdown-текст из хранимого значения или из редактора
+        if self.mode == EditorMode.RAW:
+            # В RAW режиме берем текст напрямую из редактора и обновляем сохраненное значение
+            current_markdown = self.text_edit.toPlainText()
+            self._current_markdown = current_markdown
+        else:
+            # В VISUAL режиме используем сохраненный Markdown
+            current_markdown = self._current_markdown
+        
         cursor_position = self.text_edit.textCursor().position()
         
         self.mode = mode
         
         if mode == EditorMode.VISUAL:
+            # Сохраняем оригинальный Markdown перед конвертацией
+            self._current_markdown = current_markdown
             # В визуальном режиме конвертируем Markdown в HTML с правильными стилями
             html_content = self._markdown_to_html(current_markdown)
             self.text_edit.setHtml(html_content)
         else:
-            # В raw режиме показываем чистый markdown-текст
-            # Сбрасываем все форматирование, чтобы текст был обычным
-            self.text_edit.setPlainText(current_markdown)
+            # В raw режиме показываем сохраненный Markdown текст
+            self.text_edit.setPlainText(self._current_markdown)
             
             # Устанавливаем обычный шрифт для всего текста в RAW режиме
             cursor = self.text_edit.textCursor()
