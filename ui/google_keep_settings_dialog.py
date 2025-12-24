@@ -41,14 +41,14 @@ class GoogleKeepSettingsDialog(QDialog):
         # Email
         self.email_input = QLineEdit()
         self.email_input.setPlaceholderText("your.email@gmail.com")
-        self.email_input.setMaximumWidth(250)
+        self.email_input.setFixedWidth(200)
         keep_layout.addRow("Email:", self.email_input)
         
         # Пароль
         self.password_input = QLineEdit()
         self.password_input.setPlaceholderText("Пароль или токен приложения")
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
-        self.password_input.setMaximumWidth(250)
+        self.password_input.setFixedWidth(200)
         keep_layout.addRow("Пароль:", self.password_input)
         
         # Понижать расширенный Markdown
