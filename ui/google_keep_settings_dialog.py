@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QLineEdit, QFormLayout, QMessageBox, QCheckBox, QGroupBox
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
 
 from utils.settings import Settings
 
@@ -132,8 +132,11 @@ class GoogleKeepSettingsDialog(QDialog):
         # Подключаем сигналы
         self.enabled_checkbox.toggled.connect(self.on_enabled_changed)
         self.master_token_input.textChanged.connect(self._update_test_button_state)
-        self.email_input.textChanged.connect(self._update_test_button_state)
-        self.app_password_input.textChanged.connect(self._update_test_button_state)
+        self.email_input.textChanged.connect(self._on_credentials_changed)
+        self.app_password_input.textChanged.connect(self._on_credentials_changed)
+        
+        # Флаг для предотвращения рекурсии при программной вставке токена
+        self._is_auto_filling_token = False
     
     def _update_test_button_state(self):
         """Обновляет состояние кнопки теста соединения."""
@@ -148,6 +151,78 @@ class GoogleKeepSettingsDialog(QDialog):
         """Обрабатывает изменение состояния чекбокса включения."""
         # Кнопка теста не зависит от чекбокса, только от наличия credentials
         pass
+    
+    def _get_master_token_async(self):
+        """Асинхронно получает Master Token через gkeepapi."""
+        # Проверяем еще раз, что поля заполнены и токен еще не получен
+        if self.master_token_input.text().strip():
+            return
+        
+        email = self.email_input.text().strip()
+        app_password = self.app_password_input.text().strip()
+        
+        if not email or not app_password:
+            return
+        
+        # Показываем индикатор загрузки
+        self.master_token_input.setPlaceholderText("Получение Master Token...")
+        self.master_token_input.setEnabled(False)
+        self.email_input.setEnabled(False)
+        self.app_password_input.setEnabled(False)
+        
+        try:
+            from services.google_keep_auth import GoogleKeepAuth
+            
+            # Создаем временный экземпляр для получения токена
+            auth = GoogleKeepAuth(email=email, app_password=app_password)
+            
+            # Пытаемся получить токен
+            master_token = auth._get_master_token_from_credentials()
+            
+            if master_token:
+                # Вставляем токен в поле
+                self._is_auto_filling_token = True
+                self.master_token_input.setText(master_token)
+                self.master_token_input.setPlaceholderText("Вставьте Master Token здесь")
+                self._is_auto_filling_token = False
+                
+                # Показываем сообщение об успехе
+                QMessageBox.information(
+                    self,
+                    "Успех",
+                    "Master Token успешно получен и вставлен в форму!"
+                )
+            else:
+                raise ValueError("Не удалось получить Master Token")
+                
+        except ImportError:
+            # gkeepapi не установлен
+            self.master_token_input.setPlaceholderText("Установите gkeepapi: pip install gkeepapi")
+            QMessageBox.warning(
+                self,
+                "gkeepapi не установлен",
+                "Для автоматического получения Master Token требуется gkeepapi.\n\n"
+                "Установите: pip install gkeepapi\n\n"
+                "Или получите Master Token вручную:\n"
+                "gkeepapi -e <email> -p <app_password> gettoken"
+            )
+        except Exception as e:
+            logger.error(f"Ошибка при получении Master Token: {e}", exc_info=True)
+            self.master_token_input.setPlaceholderText("Ошибка получения токена. Введите вручную.")
+            QMessageBox.warning(
+                self,
+                "Ошибка",
+                f"Не удалось получить Master Token автоматически:\n{str(e)}\n\n"
+                "Попробуйте получить токен вручную:\n"
+                "gkeepapi -e <email> -p <app_password> gettoken"
+            )
+        finally:
+            # Восстанавливаем поля
+            self.master_token_input.setEnabled(True)
+            self.email_input.setEnabled(True)
+            self.app_password_input.setEnabled(True)
+            if not self.master_token_input.text().strip():
+                self.master_token_input.setPlaceholderText("Вставьте Master Token здесь")
     
     def load_settings(self):
         """Загружает настройки из объекта Settings."""
