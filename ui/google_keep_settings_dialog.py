@@ -111,7 +111,7 @@ class GoogleKeepSettingsDialog(QDialog):
         
         # Кнопка тестирования соединения
         self.test_btn = QPushButton("Тест соединения")
-        self.test_btn.setEnabled(False)
+        self.test_btn.setEnabled(False)  # Будет активирована при наличии credentials
         self.test_btn.clicked.connect(self.test_connection)
         layout.addWidget(self.test_btn)
         
@@ -138,17 +138,17 @@ class GoogleKeepSettingsDialog(QDialog):
     
     def _update_test_button_state(self):
         """Обновляет состояние кнопки теста соединения."""
-        # Кнопка активна, если синхронизация включена И есть credentials
+        # Кнопка активна, если есть credentials (независимо от чекбокса включения)
         has_credentials = (
             (self.client_id_input.text().strip() and self.client_secret_input.text().strip()) or
             self.credentials_file_input.text().strip()
         )
-        self.test_btn.setEnabled(self.enabled_checkbox.isChecked() and has_credentials)
+        self.test_btn.setEnabled(has_credentials)
     
     def on_enabled_changed(self, enabled: bool):
         """Обрабатывает изменение состояния чекбокса включения."""
-        # Поля ввода всегда активны, только кнопка теста зависит от включения
-        self._update_test_button_state()
+        # Кнопка теста не зависит от чекбокса, только от наличия credentials
+        pass
     
     def load_settings(self):
         """Загружает настройки из объекта Settings."""
@@ -164,8 +164,8 @@ class GoogleKeepSettingsDialog(QDialog):
         self.project_id_input.setText(project_id)
         self.credentials_file_input.setText(credentials_file)
         
-        # Обновляем состояние полей
-        self.on_enabled_changed(enabled)
+        # Обновляем состояние кнопки теста после загрузки настроек
+        self._update_test_button_state()
     
     def test_connection(self):
         """Тестирует соединение с Google Keep через OAuth 2.0."""
