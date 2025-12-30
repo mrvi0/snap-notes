@@ -200,21 +200,21 @@ class GoogleKeepAuth:
             
             # Если это не LoginException, продолжаем обычную обработку
             if "BadAuthentication" in str(e) or "LoginException" in str(e):
-            error_code = e.args[0] if e.args else "Unknown"
-            logger.error(f"Ошибка аутентификации в gkeepapi: {error_code}")
-            raise ValueError(
-                f"Ошибка аутентификации: {error_code}\n\n"
-                "Возможные причины:\n"
-                "1. Неправильный email или app password\n"
-                "2. App password не создан или отозван\n"
-                "3. Двухфакторная аутентификация не включена\n"
-                "4. Аккаунт заблокирован или требует дополнительной проверки\n\n"
-                "Попробуйте:\n"
-                "1. Создать новый App Password: https://myaccount.google.com/apppasswords\n"
-                "2. Убедиться, что используете 16-символьный токен без пробелов\n"
-                "3. Получить Master Token вручную через CLI:\n"
-                "   gkeepapi -e <email> -p <app_password> gettoken"
-            )
+                error_code = e.args[0] if e.args else "Unknown"
+                logger.error(f"Ошибка аутентификации в gkeepapi: {error_code}")
+                raise ValueError(
+                    f"Ошибка аутентификации: {error_code}\n\n"
+                    "Возможные причины:\n"
+                    "1. Неправильный email или app password\n"
+                    "2. App password не создан или отозван\n"
+                    "3. Двухфакторная аутентификация не включена\n"
+                    "4. Аккаунт заблокирован или требует дополнительной проверки\n\n"
+                    "Попробуйте:\n"
+                    "1. Создать новый App Password: https://myaccount.google.com/apppasswords\n"
+                    "2. Убедиться, что используете 16-символьный токен без пробелов\n"
+                    "3. Получить Master Token вручную через CLI:\n"
+                    "   gkeepapi -e <email> -p <app_password> gettoken"
+                )
         except Exception as e:
             logger.error(f"Ошибка при получении Master Token через gkeepapi: {e}")
             error_msg = str(e)
