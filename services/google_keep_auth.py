@@ -104,13 +104,11 @@ class GoogleKeepAuth:
             # Создаем экземпляр gkeepapi и аутентифицируемся
             keep = gkeepapi.Keep()
             
-            # Используем authenticate вместо устаревшего login
-            try:
-                success = keep.authenticate(self.email, self.app_password)
-            except AttributeError:
-                # Если authenticate не доступен, пробуем login (для старых версий)
-                logger.warning("authenticate не доступен, используем login")
-                success = keep.login(self.email, self.app_password)
+            # Для получения master token нужно использовать login, а не authenticate
+            # authenticate используется когда master token уже есть
+            # login принимает email/password и получает master token
+            # Используем login (может быть deprecated, но это единственный способ получить токен)
+            success = keep.login(self.email, self.app_password)
             
             if not success:
                 raise ValueError(
@@ -123,14 +121,21 @@ class GoogleKeepAuth:
                 )
             
             # Получаем Master Token из gkeepapi
-            # gkeepapi хранит токен в приватных атрибутах после логина
+            # После успешного login, токен хранится в keep._master_token
             master_token = None
             
             # Пытаемся получить токен из различных мест, где gkeepapi может его хранить
+            # Основной способ - через _master_token атрибут
             if hasattr(keep, '_master_token') and keep._master_token:
                 master_token = keep._master_token
             elif hasattr(keep, 'master_token') and keep.master_token:
                 master_token = keep.master_token
+            # Также может быть в auth объекте
+            elif hasattr(keep, '_auth') and hasattr(keep._auth, '_master_token'):
+                master_token = keep._auth._master_token
+            elif hasattr(keep, 'auth') and hasattr(keep.auth, '_master_token'):
+                master_token = keep.auth._master_token
+            # Или в session
             elif hasattr(keep, '_session') and hasattr(keep._session, '_master_token'):
                 master_token = keep._session._master_token
             elif hasattr(keep, 'session') and hasattr(keep.session, '_master_token'):
