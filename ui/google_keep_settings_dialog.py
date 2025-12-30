@@ -169,6 +169,18 @@ class GoogleKeepSettingsDialog(QDialog):
     
     def test_connection(self):
         """Тестирует соединение с Google Keep через OAuth 2.0."""
+        # Сначала сохраняем текущие настройки (чтобы credentials были доступны)
+        client_id = self.client_id_input.text().strip()
+        client_secret = self.client_secret_input.text().strip()
+        project_id = self.project_id_input.text().strip()
+        credentials_file = self.credentials_file_input.text().strip()
+        
+        # Временно сохраняем в settings для теста
+        self.settings.set('google_keep.client_id', client_id)
+        self.settings.set('google_keep.client_secret', client_secret)
+        self.settings.set('google_keep.project_id', project_id)
+        self.settings.set('google_keep.credentials_file', credentials_file)
+        
         # Блокируем кнопку во время теста
         self.test_btn.setEnabled(False)
         self.test_btn.setText("Проверка...")
@@ -177,7 +189,7 @@ class GoogleKeepSettingsDialog(QDialog):
             from services.google_keep_sync import GoogleKeepSync
             from storage.database import DatabaseManager
             
-            # Создаем временный экземпляр для теста
+            # Создаем временный экземпляр для теста с обновленными настройками
             db_manager = DatabaseManager()
             sync = GoogleKeepSync(db_manager, settings=self.settings, parent_widget=self)
             
@@ -216,10 +228,19 @@ class GoogleKeepSettingsDialog(QDialog):
             )
         except Exception as e:
             logger.error(f"Ошибка при тестировании соединения: {e}", exc_info=True)
+            error_msg = str(e)
+            # Улучшаем сообщение об ошибке для отсутствующих credentials
+            if "credentials" in error_msg.lower() or "client_id" in error_msg.lower():
+                error_msg = (
+                    f"{error_msg}\n\n"
+                    "Убедитесь, что вы ввели:\n"
+                    "1. Client ID и Client Secret ИЛИ\n"
+                    "2. Путь к файлу credentials.json"
+                )
             QMessageBox.critical(
                 self, 
                 "Ошибка", 
-                f"Ошибка подключения:\n{str(e)}\n\n"
+                f"Ошибка подключения:\n{error_msg}\n\n"
                 "Проверьте логи приложения для деталей."
             )
         finally:
