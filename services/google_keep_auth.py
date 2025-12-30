@@ -82,133 +82,53 @@ class GoogleKeepAuth:
         """
         Получает Master Token используя email и app password.
         
-        Использует gkeepapi только для получения токена, затем работает напрямую с API.
+        Использует gpsoauth напрямую для получения master token, так как
+        gkeepapi.login() deprecated и не работает с app password.
         """
         if not self.email or not self.app_password:
             return None
         
         try:
-            # Пытаемся использовать gkeepapi только для получения Master Token
+            # Используем gpsoauth напрямую для получения master token
             try:
-                import gkeepapi
+                from gpsoauth import perform_master_login
+                import gkeepapi.node
             except ImportError:
                 raise ImportError(
-                    "Для получения Master Token через email/app_password требуется gkeepapi.\n"
-                    "Установите: pip install gkeepapi\n\n"
+                    "Для получения Master Token через email/app_password требуется gpsoauth.\n"
+                    "Установите: pip install gpsoauth\n\n"
                     "Или получите Master Token вручную:\n"
                     "gkeepapi -e <email> -p <app_password> gettoken"
                 )
             
-            logger.info("Используем gkeepapi для получения Master Token...")
+            logger.info("Используем gpsoauth для получения Master Token...")
             
-            # Создаем экземпляр gkeepapi и аутентифицируемся
-            keep = gkeepapi.Keep()
+            # Генерируем android_id (нужен для perform_master_login)
+            android_id = gkeepapi.node.Node.randomId()
             
-            # Для получения master token нужно использовать login, а не authenticate
-            # authenticate используется когда master token уже есть
-            # login принимает email/password и получает master token
-            # Используем login (может быть deprecated, но это единственный способ получить токен)
-            success = keep.login(self.email, self.app_password)
+            # Выполняем master login через gpsoauth
+            # Это то же самое, что делает gkeepapi внутри, но напрямую
+            result = perform_master_login(
+                email=self.email,
+                password=self.app_password,
+                android_id=android_id
+            )
             
-            if not success:
-                raise ValueError(
-                    "Не удалось войти в Google Keep.\n\n"
-                    "Проверьте:\n"
-                    "1. Email правильный\n"
-                    "2. App Password правильный (16 символов без пробелов)\n"
-                    "3. Двухфакторная аутентификация включена\n"
-                    "4. App Password создан для правильного аккаунта"
-                )
-            
-            # Получаем Master Token из gkeepapi
-            # После успешного login, токен хранится в keep._master_token
-            master_token = None
-            
-            # Пытаемся получить токен из различных мест, где gkeepapi может его хранить
-            # Основной способ - через _master_token атрибут
-            if hasattr(keep, '_master_token') and keep._master_token:
-                master_token = keep._master_token
-            elif hasattr(keep, 'master_token') and keep.master_token:
-                master_token = keep.master_token
-            # Также может быть в auth объекте
-            elif hasattr(keep, '_auth') and hasattr(keep._auth, '_master_token'):
-                master_token = keep._auth._master_token
-            elif hasattr(keep, 'auth') and hasattr(keep.auth, '_master_token'):
-                master_token = keep.auth._master_token
-            # Или в session
-            elif hasattr(keep, '_session') and hasattr(keep._session, '_master_token'):
-                master_token = keep._session._master_token
-            elif hasattr(keep, 'session') and hasattr(keep.session, '_master_token'):
-                master_token = keep.session._master_token
-            else:
-                # Пытаемся получить через публичный метод, если он есть
-                try:
-                    if hasattr(keep, 'getMasterToken'):
-                        master_token = keep.getMasterToken()
-                except:
-                    pass
-            
-            if master_token:
-                logger.info("Master Token успешно получен через gkeepapi")
-                return master_token
-            else:
-                # Если не удалось получить напрямую, пытаемся извлечь из HTTP заголовков
-                # gkeepapi может использовать токен в запросах
-                try:
-                    # Делаем тестовый запрос и извлекаем токен из заголовков
-                    # Это не идеально, но может сработать
-                    if hasattr(keep, '_session') and hasattr(keep._session, 'headers'):
-                        headers = keep._session.headers
-                        if 'Authorization' in headers:
-                            auth_header = headers['Authorization']
-                            if auth_header.startswith('Bearer '):
-                                master_token = auth_header[7:]  # Убираем 'Bearer '
-                except:
-                    pass
-                
+            # Извлекаем Token из результата
+            if result and 'Token' in result:
+                master_token = result['Token']
                 if master_token:
-                    logger.info("Master Token извлечен из заголовков gkeepapi")
+                    logger.info("Master Token успешно получен через gpsoauth")
                     return master_token
                 else:
                     raise ValueError(
-                        "Не удалось получить Master Token из gkeepapi.\n"
-                        "Попробуйте получить токен вручную через CLI:\n"
-                        "gkeepapi -e <email> -p <app_password> gettoken"
+                        "Не удалось получить Master Token из gpsoauth.\n"
+                        "Ответ не содержит токен."
                     )
-            
-        except ImportError as e:
-            logger.error(f"gkeepapi не установлен: {e}")
-            raise
-        except Exception as e:
-            # Проверяем, является ли это ошибкой аутентификации gkeepapi
-            if HAS_GKEEPAPI_EXCEPTIONS:
-                try:
-                    import gkeepapi.exception
-                    if isinstance(e, gkeepapi.exception.LoginException):
-                        error_code = e.args[0] if e.args else "Unknown"
-                        logger.error(f"Ошибка аутентификации в gkeepapi: {error_code}")
-                        raise ValueError(
-                            f"Ошибка аутентификации: {error_code}\n\n"
-                            "Возможные причины:\n"
-                            "1. Неправильный email или app password\n"
-                            "2. App password не создан или отозван\n"
-                            "3. Двухфакторная аутентификация не включена\n"
-                            "4. Аккаунт заблокирован или требует дополнительной проверки\n\n"
-                            "Попробуйте:\n"
-                            "1. Создать новый App Password: https://myaccount.google.com/apppasswords\n"
-                            "2. Убедиться, что используете 16-символьный токен без пробелов\n"
-                            "3. Получить Master Token вручную через CLI:\n"
-                            "   gkeepapi -e <email> -p <app_password> gettoken"
-                        )
-                except:
-                    pass
-            
-            # Если это не LoginException, продолжаем обычную обработку
-            if "BadAuthentication" in str(e) or "LoginException" in str(e):
-                error_code = e.args[0] if e.args else "Unknown"
-                logger.error(f"Ошибка аутентификации в gkeepapi: {error_code}")
+            else:
+                error_msg = result.get('Error', 'Unknown') if isinstance(result, dict) else 'Unknown'
                 raise ValueError(
-                    f"Ошибка аутентификации: {error_code}\n\n"
+                    f"Ошибка при получении Master Token: {error_msg}\n\n"
                     "Возможные причины:\n"
                     "1. Неправильный email или app password\n"
                     "2. App password не создан или отозван\n"
@@ -217,24 +137,43 @@ class GoogleKeepAuth:
                     "Попробуйте:\n"
                     "1. Создать новый App Password: https://myaccount.google.com/apppasswords\n"
                     "2. Убедиться, что используете 16-символьный токен без пробелов\n"
-                    "3. Получить Master Token вручную через CLI:\n"
-                    "   gkeepapi -e <email> -p <app_password> gettoken"
+                    "3. Проверить, что двухфакторная аутентификация включена"
                 )
+            
+        except ImportError as e:
+            logger.error(f"gpsoauth не установлен: {e}")
+            raise
         except Exception as e:
-            logger.error(f"Ошибка при получении Master Token через gkeepapi: {e}")
+            logger.error(f"Ошибка при получении Master Token через gpsoauth: {e}")
             error_msg = str(e)
-            if "BadAuthentication" in error_msg or "LoginException" in error_msg:
+            
+            # Обрабатываем различные типы ошибок
+            if "BadAuthentication" in error_msg or "bad_authentication" in error_msg.lower():
                 raise ValueError(
-                    "Ошибка аутентификации в Google Keep.\n\n"
+                    "Ошибка аутентификации: BadAuthentication\n\n"
+                    "Возможные причины:\n"
+                    "1. Неправильный email или app password\n"
+                    "2. App password не создан или отозван\n"
+                    "3. Двухфакторная аутентификация не включена\n"
+                    "4. Аккаунт заблокирован или требует дополнительной проверки\n\n"
+                    "Попробуйте:\n"
+                    "1. Создать новый App Password: https://myaccount.google.com/apppasswords\n"
+                    "2. Убедиться, что используете 16-символьный токен без пробелов\n"
+                    "3. Проверить, что двухфакторная аутентификация включена\n"
+                    "4. Убедиться, что используете App Password, а не обычный пароль"
+                )
+            elif "ValueError" in str(type(e)):
+                # Если это уже ValueError с сообщением, просто пробрасываем
+                raise
+            else:
+                raise ValueError(
+                    f"Ошибка при получении Master Token: {error_msg}\n\n"
                     "Проверьте email и app password.\n"
                     "Убедитесь, что:\n"
                     "1. App Password правильный (16 символов, без пробелов)\n"
                     "2. Двухфакторная аутентификация включена\n"
-                    "3. App Password создан для правильного аккаунта\n\n"
-                    "Получите Master Token вручную:\n"
-                    "gkeepapi -e <email> -p <app_password> gettoken"
+                    "3. App Password создан для правильного аккаунта"
                 )
-            raise
     
     def authenticate(self) -> bool:
         """
