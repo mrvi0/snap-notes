@@ -139,7 +139,7 @@ class GoogleKeepSettingsDialog(QDialog):
     def _update_test_button_state(self):
         """Обновляет состояние кнопки теста соединения."""
         # Кнопка активна, если есть credentials (независимо от чекбокса включения)
-        has_credentials = (
+        has_credentials = bool(
             (self.client_id_input.text().strip() and self.client_secret_input.text().strip()) or
             self.credentials_file_input.text().strip()
         )
