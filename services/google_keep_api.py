@@ -1,7 +1,7 @@
 """
-Модуль для работы с Google Keep через REST API.
+Модуль для работы с Google Keep через неофициальный REST API.
 
-Использует OAuth 2.0 для аутентификации и прямые HTTP запросы к Google Keep API.
+Использует Master Token для аутентификации и прямые HTTP запросы к Google Keep API.
 """
 import logging
 import requests
@@ -10,56 +10,39 @@ from datetime import datetime
 
 from models import Note
 from storage.database import DatabaseManager
-from services.google_keep_oauth import GoogleKeepOAuth, HAS_GOOGLE_AUTH
+from services.google_keep_auth import GoogleKeepAuth
 
 logger = logging.getLogger(__name__)
 
-# Базовый URL для Google Keep API (неофициальный, но стабильный)
+# Базовый URL для Google Keep API (неофициальный)
 KEEP_API_BASE = "https://keep.google.com"
-KEEP_API_URL = f"{KEEP_API_BASE}/media"
 
 
 class GoogleKeepAPI:
     """Класс для работы с Google Keep через REST API."""
     
-    def __init__(self, db_manager: DatabaseManager, oauth: GoogleKeepOAuth):
+    def __init__(self, db_manager: DatabaseManager, auth: GoogleKeepAuth):
         """
         Инициализация API клиента.
         
         Args:
             db_manager: Менеджер базы данных
-            oauth: Экземпляр GoogleKeepOAuth для аутентификации
+            auth: Экземпляр GoogleKeepAuth для аутентификации
         """
-        if not HAS_GOOGLE_AUTH:
-            raise ImportError("google-auth не установлен")
-        
         self.db_manager = db_manager
-        self.oauth = oauth
-        self.session = requests.Session()
+        self.auth = auth
+        self.session = auth.get_session()
         self._authenticated = False
-    
-    def _get_headers(self) -> Dict[str, str]:
-        """Возвращает заголовки для HTTP запросов."""
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36',
-            'Content-Type': 'application/json',
-        }
-        
-        # Добавляем OAuth токен
-        if self.oauth.creds and self.oauth.creds.token:
-            headers['Authorization'] = f'Bearer {self.oauth.creds.token}'
-        
-        return headers
     
     def authenticate(self) -> bool:
         """
-        Аутентифицируется через OAuth.
+        Аутентифицируется через Master Token.
         
         Returns:
             True если успешно
         """
-        if not self.oauth.is_authenticated():
-            if not self.oauth.authenticate():
+        if not self.auth.is_authenticated():
+            if not self.auth.authenticate():
                 return False
         
         self._authenticated = True
@@ -78,19 +61,13 @@ class GoogleKeepAPI:
                 raise Exception("Не удалось аутентифицироваться")
         
         try:
-            # Получаем список заметок через Google Keep API
-            # Используем неофициальный endpoint для получения заметок
+            # Получаем список заметок через неофициальный Google Keep API
+            # Используем endpoint, который использует gkeepapi
             url = f"{KEEP_API_BASE}/api/v1/notes"
-            response = self.session.get(url, headers=self._get_headers())
+            response = self.session.get(url, timeout=10)
             
             if response.status_code == 401:
-                # Токен истек, обновляем
-                logger.warning("Токен истек, обновляем...")
-                if self.oauth.creds and self.oauth.creds.refresh_token:
-                    from google.auth.transport.requests import Request
-                    self.oauth.creds.refresh(Request())
-                    self.oauth._save_token()
-                    response = self.session.get(url, headers=self._get_headers())
+                raise Exception("Master Token недействителен. Получите новый токен.")
             
             response.raise_for_status()
             data = response.json()
@@ -103,8 +80,18 @@ class GoogleKeepAPI:
                     title = keep_note.get('title', 'Без названия')
                     text = keep_note.get('text', '')
                     # Конвертируем timestamp в datetime
-                    created = datetime.fromtimestamp(keep_note.get('createdTimestampUsec', 0) / 1000000)
-                    updated = datetime.fromtimestamp(keep_note.get('userEditedTimestampUsec', 0) / 1000000)
+                    created_timestamp = keep_note.get('createdTimestampUsec', 0)
+                    updated_timestamp = keep_note.get('userEditedTimestampUsec', 0) or created_timestamp
+                    
+                    if created_timestamp:
+                        created = datetime.fromtimestamp(created_timestamp / 1000000)
+                    else:
+                        created = datetime.now()
+                    
+                    if updated_timestamp:
+                        updated = datetime.fromtimestamp(updated_timestamp / 1000000)
+                    else:
+                        updated = created
                     
                     note = Note(
                         id=None,  # Будет создан в БД
@@ -137,7 +124,7 @@ class GoogleKeepAPI:
                 raise Exception("Не удалось аутентифицироваться")
         
         try:
-            # Создаем заметку через Google Keep API
+            # Создаем заметку через неофициальный Google Keep API
             url = f"{KEEP_API_BASE}/api/v1/notes"
             payload = {
                 'title': note.title,
@@ -146,22 +133,12 @@ class GoogleKeepAPI:
             
             response = self.session.post(
                 url,
-                headers=self._get_headers(),
-                json=payload
+                json=payload,
+                timeout=10
             )
             
             if response.status_code == 401:
-                # Токен истек, обновляем
-                logger.warning("Токен истек, обновляем...")
-                if self.oauth.creds and self.oauth.creds.refresh_token:
-                    from google.auth.transport.requests import Request
-                    self.oauth.creds.refresh(Request())
-                    self.oauth._save_token()
-                    response = self.session.post(
-                        url,
-                        headers=self._get_headers(),
-                        json=payload
-                    )
+                raise Exception("Master Token недействителен. Получите новый токен.")
             
             response.raise_for_status()
             logger.info(f"Заметка '{note.title}' отправлена в Google Keep")
@@ -186,4 +163,3 @@ class GoogleKeepAPI:
         
         logger.info(f"Отправлено {len(notes)} заметок в Google Keep")
         return True
-

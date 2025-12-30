@@ -1,8 +1,7 @@
 """
 Модуль для синхронизации заметок с Google Keep.
 
-Использует OAuth 2.0 для безопасной аутентификации и прямые HTTP запросы к Google Keep API.
-Вместо использования сторонней библиотеки gkeepapi, используем официальный Google OAuth 2.0.
+Использует Master Token для аутентификации и прямые HTTP запросы к неофициальному Google Keep API.
 """
 import logging
 from typing import List, Optional, Tuple
@@ -10,14 +9,14 @@ from datetime import datetime
 
 from models import Note
 from storage.database import DatabaseManager
-from services.google_keep_oauth import GoogleKeepOAuth, HAS_GOOGLE_AUTH
+from services.google_keep_auth import GoogleKeepAuth
 from services.google_keep_api import GoogleKeepAPI
 
 logger = logging.getLogger(__name__)
 
 
 class GoogleKeepSync:
-    """Класс для синхронизации заметок с Google Keep через OAuth 2.0."""
+    """Класс для синхронизации заметок с Google Keep через Master Token."""
     
     def __init__(self, db_manager: DatabaseManager, settings=None, parent_widget=None):
         """
@@ -25,69 +24,52 @@ class GoogleKeepSync:
         
         Args:
             db_manager: Менеджер базы данных
-            settings: Объект Settings для получения OAuth credentials (опционально)
-            parent_widget: Родительский виджет для OAuth диалога (опционально)
+            settings: Объект Settings для получения Master Token (опционально)
+            parent_widget: Родительский виджет (опционально)
         """
-        if not HAS_GOOGLE_AUTH:
-            raise ImportError(
-                "google-auth не установлен. Установите: "
-                "pip install google-auth google-auth-oauthlib google-auth-httplib2"
-            )
-        
         self.db_manager = db_manager
         self.settings = settings
         self.parent_widget = parent_widget
         
-        # Получаем credentials из настроек или используем файл
-        credentials_file = None
-        client_id = None
-        client_secret = None
-        project_id = None
+        # Получаем credentials из настроек
+        master_token = None
+        email = None
+        app_password = None
         
         if settings:
-            credentials_file = settings.get('google_keep.credentials_file', '')
-            if credentials_file:
-                credentials_file = credentials_file.strip()
-            client_id = settings.get('google_keep.client_id', '')
-            if client_id:
-                client_id = client_id.strip()
-            client_secret = settings.get('google_keep.client_secret', '')
-            if client_secret:
-                client_secret = client_secret.strip()
-            project_id = settings.get('google_keep.project_id', '')
-            if project_id:
-                project_id = project_id.strip()
+            master_token = settings.get('google_keep.master_token', '')
+            if master_token:
+                master_token = master_token.strip()
+            email = settings.get('google_keep.email', '')
+            if email:
+                email = email.strip()
+            app_password = settings.get('google_keep.app_password', '')
+            if app_password:
+                app_password = app_password.strip()
         
-        # Создаем OAuth клиент с credentials из настроек или файла
-        self.oauth = GoogleKeepOAuth(
-            credentials_file=credentials_file if credentials_file else None,
-            client_id=client_id if client_id else None,
-            client_secret=client_secret if client_secret else None,
-            project_id=project_id if project_id else None
+        # Создаем auth клиент с Master Token или email/app_password
+        self.auth = GoogleKeepAuth(
+            master_token=master_token if master_token else None,
+            email=email if email else None,
+            app_password=app_password if app_password else None
         )
-        self.api = GoogleKeepAPI(db_manager, self.oauth)
+        self.api = GoogleKeepAPI(db_manager, self.auth)
         self._authenticated = False
     
     def authenticate(self, parent_widget=None) -> bool:
         """
-        Аутентифицируется в Google Keep через OAuth 2.0.
-        
-        При первом запуске откроется браузер для авторизации.
-        Токен будет сохранен локально для последующих использований.
+        Аутентифицируется в Google Keep через Master Token.
         
         Args:
-            parent_widget: Родительский виджет (опционально, для будущего использования)
+            parent_widget: Родительский виджет (опционально)
             
         Returns:
             True если аутентификация успешна
         """
         try:
-            # Используем переданный виджет или сохраненный
-            widget = parent_widget or self.parent_widget
-            
-            # Аутентифицируемся через OAuth
-            if not self.oauth.authenticate(widget):
-                logger.error("OAuth аутентификация не удалась")
+            # Аутентифицируемся через Master Token
+            if not self.auth.authenticate():
+                logger.error("Аутентификация с Master Token не удалась")
                 return False
             
             # Аутентифицируемся в API
@@ -96,11 +78,11 @@ class GoogleKeepSync:
                 return False
             
             self._authenticated = True
-            logger.info("Успешная аутентификация в Google Keep через OAuth 2.0")
+            logger.info("Успешная аутентификация в Google Keep через Master Token")
             return True
             
         except Exception as e:
-            logger.error(f"Ошибка при OAuth аутентификации: {e}", exc_info=True)
+            logger.error(f"Ошибка при аутентификации: {e}", exc_info=True)
             self._authenticated = False
             return False
     

@@ -40,51 +40,36 @@ class GoogleKeepSettingsDialog(QDialog):
         enabled_label.setStyleSheet("font-size: 11pt;")
         keep_layout.addRow(enabled_label, self.enabled_checkbox)
         
-        # Информация об OAuth
+        # Информация о Master Token
         info_label = QLabel(
-            "Синхронизация использует OAuth 2.0 для безопасной авторизации.\n\n"
-            "Введите OAuth credentials из Google Cloud Console или укажите путь к файлу credentials.json.\n\n"
-            "При первом подключении откроется браузер для авторизации.\n"
-            "Токен будет сохранен локально для последующих использований.\n\n"
-            "См. README.md для подробных инструкций по созданию credentials."
+            "Google Keep API недоступен через OAuth 2.0 для личных аккаунтов.\n"
+            "Используется Master Token для доступа к неофициальному API Google Keep.\n\n"
+            "Вариант 1 - Master Token (рекомендуется):\n"
+            "Введите Master Token напрямую (получите через gkeepapi CLI или другой способ).\n\n"
+            "Вариант 2 - Email + App Password:\n"
+            "Введите email и App Password (16-символьный токен приложения).\n"
+            "Приложение автоматически получит Master Token при первом подключении.\n\n"
+            "См. README.md для подробных инструкций."
         )
         info_label.setWordWrap(True)
         info_label.setStyleSheet("font-size: 10pt; color: #666; padding: 10px;")
         keep_layout.addRow(info_label)
         
-        # Client ID
-        client_id_label = QLabel("Client ID:")
-        client_id_label.setStyleSheet("font-size: 11pt;")
-        self.client_id_input = QLineEdit()
-        self.client_id_input.setPlaceholderText("xxxxx.apps.googleusercontent.com")
-        self.client_id_input.setFixedWidth(350)
-        self.client_id_input.setFixedHeight(28)
-        self.client_id_input.setStyleSheet("font-size: 10pt;")
-        self.client_id_input.setToolTip("OAuth 2.0 Client ID из Google Cloud Console")
-        keep_layout.addRow(client_id_label, self.client_id_input)
-        
-        # Client Secret
-        client_secret_label = QLabel("Client Secret:")
-        client_secret_label.setStyleSheet("font-size: 11pt;")
-        self.client_secret_input = QLineEdit()
-        self.client_secret_input.setPlaceholderText("GOCSPX-xxxxxxxxxxxxx")
-        self.client_secret_input.setEchoMode(QLineEdit.EchoMode.Password)
-        self.client_secret_input.setFixedWidth(350)
-        self.client_secret_input.setFixedHeight(28)
-        self.client_secret_input.setStyleSheet("font-size: 10pt;")
-        self.client_secret_input.setToolTip("OAuth 2.0 Client Secret из Google Cloud Console")
-        keep_layout.addRow(client_secret_label, self.client_secret_input)
-        
-        # Project ID (опционально)
-        project_id_label = QLabel("Project ID (опционально):")
-        project_id_label.setStyleSheet("font-size: 11pt;")
-        self.project_id_input = QLineEdit()
-        self.project_id_input.setPlaceholderText("your-project-id")
-        self.project_id_input.setFixedWidth(350)
-        self.project_id_input.setFixedHeight(28)
-        self.project_id_input.setStyleSheet("font-size: 10pt;")
-        self.project_id_input.setToolTip("Project ID из Google Cloud Console (необязательно)")
-        keep_layout.addRow(project_id_label, self.project_id_input)
+        # Master Token (приоритетный способ)
+        master_token_label = QLabel("Master Token:")
+        master_token_label.setStyleSheet("font-size: 11pt;")
+        self.master_token_input = QLineEdit()
+        self.master_token_input.setPlaceholderText("Вставьте Master Token здесь")
+        self.master_token_input.setEchoMode(QLineEdit.EchoMode.Password)
+        self.master_token_input.setFixedWidth(350)
+        self.master_token_input.setFixedHeight(28)
+        self.master_token_input.setStyleSheet("font-size: 10pt;")
+        self.master_token_input.setToolTip(
+            "Master Token для доступа к Google Keep.\n"
+            "Получите через: gkeepapi -e <email> -p <app_password> gettoken\n"
+            "Или оставьте пустым и используйте Email + App Password ниже."
+        )
+        keep_layout.addRow(master_token_label, self.master_token_input)
         
         # Разделитель
         separator_label = QLabel("─ или ─")
@@ -92,19 +77,33 @@ class GoogleKeepSettingsDialog(QDialog):
         separator_label.setStyleSheet("font-size: 10pt; color: #999; padding: 10px 0;")
         keep_layout.addRow(separator_label)
         
-        # Путь к файлу credentials.json (альтернатива)
-        credentials_file_label = QLabel("Путь к credentials.json:")
-        credentials_file_label.setStyleSheet("font-size: 11pt;")
-        self.credentials_file_input = QLineEdit()
-        self.credentials_file_input.setPlaceholderText("~/.notes-google-keep/credentials.json")
-        self.credentials_file_input.setFixedWidth(350)
-        self.credentials_file_input.setFixedHeight(28)
-        self.credentials_file_input.setStyleSheet("font-size: 10pt;")
-        self.credentials_file_input.setToolTip(
-            "Альтернатива: путь к файлу credentials.json из Google Cloud Console.\n"
-            "Если указан, будет использован файл вместо полей выше."
+        # Email
+        email_label = QLabel("Email:")
+        email_label.setStyleSheet("font-size: 11pt;")
+        self.email_input = QLineEdit()
+        self.email_input.setPlaceholderText("your.email@gmail.com")
+        self.email_input.setFixedWidth(350)
+        self.email_input.setFixedHeight(28)
+        self.email_input.setStyleSheet("font-size: 10pt;")
+        keep_layout.addRow(email_label, self.email_input)
+        
+        # App Password
+        app_password_label = QLabel("App Password:")
+        app_password_label.setStyleSheet("font-size: 11pt;")
+        self.app_password_input = QLineEdit()
+        self.app_password_input.setPlaceholderText("16-символьный токен приложения")
+        self.app_password_input.setEchoMode(QLineEdit.EchoMode.Password)
+        self.app_password_input.setFixedWidth(350)
+        self.app_password_input.setFixedHeight(28)
+        self.app_password_input.setStyleSheet("font-size: 10pt;")
+        self.app_password_input.setToolTip(
+            "Токен приложения (App Password) из Google Account.\n"
+            "1. Включите двухфакторную аутентификацию\n"
+            "2. Перейдите: https://myaccount.google.com/apppasswords\n"
+            "3. Создайте токен для 'Mail' или 'Other'\n"
+            "4. Используйте 16-символьный токен (без пробелов)"
         )
-        keep_layout.addRow(credentials_file_label, self.credentials_file_input)
+        keep_layout.addRow(app_password_label, self.app_password_input)
         
         keep_group.setLayout(keep_layout)
         layout.addWidget(keep_group)
@@ -132,16 +131,16 @@ class GoogleKeepSettingsDialog(QDialog):
         
         # Подключаем сигналы
         self.enabled_checkbox.toggled.connect(self.on_enabled_changed)
-        self.client_id_input.textChanged.connect(self._update_test_button_state)
-        self.client_secret_input.textChanged.connect(self._update_test_button_state)
-        self.credentials_file_input.textChanged.connect(self._update_test_button_state)
+        self.master_token_input.textChanged.connect(self._update_test_button_state)
+        self.email_input.textChanged.connect(self._update_test_button_state)
+        self.app_password_input.textChanged.connect(self._update_test_button_state)
     
     def _update_test_button_state(self):
         """Обновляет состояние кнопки теста соединения."""
-        # Кнопка активна, если есть credentials (независимо от чекбокса включения)
+        # Кнопка активна, если есть Master Token ИЛИ (Email + App Password)
         has_credentials = bool(
-            (self.client_id_input.text().strip() and self.client_secret_input.text().strip()) or
-            self.credentials_file_input.text().strip()
+            self.master_token_input.text().strip() or
+            (self.email_input.text().strip() and self.app_password_input.text().strip())
         )
         self.test_btn.setEnabled(has_credentials)
     
@@ -153,33 +152,29 @@ class GoogleKeepSettingsDialog(QDialog):
     def load_settings(self):
         """Загружает настройки из объекта Settings."""
         enabled = self.settings.get('google_keep.enabled', False)
-        client_id = self.settings.get('google_keep.client_id', '')
-        client_secret = self.settings.get('google_keep.client_secret', '')
-        project_id = self.settings.get('google_keep.project_id', '')
-        credentials_file = self.settings.get('google_keep.credentials_file', '')
+        master_token = self.settings.get('google_keep.master_token', '')
+        email = self.settings.get('google_keep.email', '')
+        app_password = self.settings.get('google_keep.app_password', '')
         
         self.enabled_checkbox.setChecked(enabled)
-        self.client_id_input.setText(client_id)
-        self.client_secret_input.setText(client_secret)
-        self.project_id_input.setText(project_id)
-        self.credentials_file_input.setText(credentials_file)
+        self.master_token_input.setText(master_token)
+        self.email_input.setText(email)
+        self.app_password_input.setText(app_password)
         
         # Обновляем состояние кнопки теста после загрузки настроек
         self._update_test_button_state()
     
     def test_connection(self):
-        """Тестирует соединение с Google Keep через OAuth 2.0."""
+        """Тестирует соединение с Google Keep через Master Token."""
         # Сначала сохраняем текущие настройки (чтобы credentials были доступны)
-        client_id = self.client_id_input.text().strip()
-        client_secret = self.client_secret_input.text().strip()
-        project_id = self.project_id_input.text().strip()
-        credentials_file = self.credentials_file_input.text().strip()
+        master_token = self.master_token_input.text().strip()
+        email = self.email_input.text().strip()
+        app_password = self.app_password_input.text().strip()
         
         # Временно сохраняем в settings для теста
-        self.settings.set('google_keep.client_id', client_id)
-        self.settings.set('google_keep.client_secret', client_secret)
-        self.settings.set('google_keep.project_id', project_id)
-        self.settings.set('google_keep.credentials_file', credentials_file)
+        self.settings.set('google_keep.master_token', master_token)
+        self.settings.set('google_keep.email', email)
+        self.settings.set('google_keep.app_password', app_password)
         
         # Блокируем кнопку во время теста
         self.test_btn.setEnabled(False)
@@ -193,20 +188,12 @@ class GoogleKeepSettingsDialog(QDialog):
             db_manager = DatabaseManager()
             sync = GoogleKeepSync(db_manager, settings=self.settings, parent_widget=self)
             
-            # Показываем сообщение о том, что откроется браузер
-            QMessageBox.information(
-                self, 
-                "Авторизация", 
-                "Сейчас откроется браузер для авторизации в Google.\n\n"
-                "Разрешите доступ к Google Keep и дождитесь завершения."
-            )
-            
             if sync.authenticate(parent_widget=self):
                 QMessageBox.information(
                     self, 
                     "Успех", 
                     "Соединение с Google Keep установлено успешно!\n\n"
-                    "Токен сохранен локально для будущих использований."
+                    "Master Token сохранен локально для будущих использований."
                 )
             else:
                 QMessageBox.critical(
@@ -214,28 +201,29 @@ class GoogleKeepSettingsDialog(QDialog):
                     "Ошибка", 
                     "Не удалось подключиться к Google Keep.\n\n"
                     "Убедитесь, что:\n"
-                    "1. Вы разрешили доступ к Google Keep в браузере\n"
-                    "2. У вас есть доступ к интернету\n"
-                    "3. Проверьте логи приложения для деталей"
+                    "1. Master Token корректен (если используете)\n"
+                    "2. Email и App Password правильные (если используете)\n"
+                    "3. У вас есть доступ к интернету\n"
+                    "4. Проверьте логи приложения для деталей"
                 )
         except ImportError as e:
             QMessageBox.critical(
                 self, 
                 "Ошибка", 
                 f"Не установлены необходимые библиотеки.\n\n"
-                f"Установите: pip install google-auth google-auth-oauthlib google-auth-httplib2\n\n"
+                f"Установите: pip install requests\n\n"
                 f"Ошибка: {e}"
             )
         except Exception as e:
             logger.error(f"Ошибка при тестировании соединения: {e}", exc_info=True)
             error_msg = str(e)
             # Улучшаем сообщение об ошибке для отсутствующих credentials
-            if "credentials" in error_msg.lower() or "client_id" in error_msg.lower():
+            if "token" in error_msg.lower() or "credentials" in error_msg.lower() or "authentication" in error_msg.lower():
                 error_msg = (
                     f"{error_msg}\n\n"
                     "Убедитесь, что вы ввели:\n"
-                    "1. Client ID и Client Secret ИЛИ\n"
-                    "2. Путь к файлу credentials.json"
+                    "1. Master Token ИЛИ\n"
+                    "2. Email и App Password (16-символьный токен приложения)"
                 )
             QMessageBox.critical(
                 self, 
@@ -251,17 +239,15 @@ class GoogleKeepSettingsDialog(QDialog):
     def accept(self):
         """Сохраняет настройки и закрывает диалог."""
         enabled = self.enabled_checkbox.isChecked()
-        client_id = self.client_id_input.text().strip()
-        client_secret = self.client_secret_input.text().strip()
-        project_id = self.project_id_input.text().strip()
-        credentials_file = self.credentials_file_input.text().strip()
+        master_token = self.master_token_input.text().strip()
+        email = self.email_input.text().strip()
+        app_password = self.app_password_input.text().strip()
         
         # Сохраняем настройки
         self.settings.set('google_keep.enabled', enabled)
-        self.settings.set('google_keep.client_id', client_id)
-        self.settings.set('google_keep.client_secret', client_secret)
-        self.settings.set('google_keep.project_id', project_id)
-        self.settings.set('google_keep.credentials_file', credentials_file)
+        self.settings.set('google_keep.master_token', master_token)
+        self.settings.set('google_keep.email', email)
+        self.settings.set('google_keep.app_password', app_password)
         
         super().accept()
     

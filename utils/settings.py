@@ -30,10 +30,9 @@ class Settings:
             },
             "google_keep": {
                 "enabled": False,
-                "client_id": "",
-                "client_secret": "",
-                "project_id": "",
-                "credentials_file": ""  # Альтернативный путь к файлу credentials.json
+                "master_token": "",  # Master Token для доступа к Google Keep
+                "email": "",  # Email для получения Master Token (если не указан master_token)
+                "app_password": ""  # App Password для получения Master Token (если не указан master_token)
             }
         }
         self.load()
