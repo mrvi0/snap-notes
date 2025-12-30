@@ -19,12 +19,13 @@ logger = logging.getLogger(__name__)
 class GoogleKeepSync:
     """Класс для синхронизации заметок с Google Keep через OAuth 2.0."""
     
-    def __init__(self, db_manager: DatabaseManager, parent_widget=None):
+    def __init__(self, db_manager: DatabaseManager, settings=None, parent_widget=None):
         """
         Инициализация синхронизации с Google Keep.
         
         Args:
             db_manager: Менеджер базы данных
+            settings: Объект Settings для получения OAuth credentials (опционально)
             parent_widget: Родительский виджет для OAuth диалога (опционально)
         """
         if not HAS_GOOGLE_AUTH:
@@ -34,8 +35,36 @@ class GoogleKeepSync:
             )
         
         self.db_manager = db_manager
+        self.settings = settings
         self.parent_widget = parent_widget
-        self.oauth = GoogleKeepOAuth()
+        
+        # Получаем credentials из настроек или используем файл
+        credentials_file = None
+        client_id = None
+        client_secret = None
+        project_id = None
+        
+        if settings:
+            credentials_file = settings.get('google_keep.credentials_file', '')
+            if credentials_file:
+                credentials_file = credentials_file.strip()
+            client_id = settings.get('google_keep.client_id', '')
+            if client_id:
+                client_id = client_id.strip()
+            client_secret = settings.get('google_keep.client_secret', '')
+            if client_secret:
+                client_secret = client_secret.strip()
+            project_id = settings.get('google_keep.project_id', '')
+            if project_id:
+                project_id = project_id.strip()
+        
+        # Создаем OAuth клиент с credentials из настроек или файла
+        self.oauth = GoogleKeepOAuth(
+            credentials_file=credentials_file if credentials_file else None,
+            client_id=client_id if client_id else None,
+            client_secret=client_secret if client_secret else None,
+            project_id=project_id if project_id else None
+        )
         self.api = GoogleKeepAPI(db_manager, self.oauth)
         self._authenticated = False
     

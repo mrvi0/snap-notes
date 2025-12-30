@@ -634,7 +634,7 @@ class NotesMainWindow(QMainWindow):
             from services.google_keep_sync import GoogleKeepSync
             
             # Создаем экземпляр синхронизатора (OAuth не требует email/password)
-            keep_sync = GoogleKeepSync(self.db_manager, parent_widget=self)
+            keep_sync = GoogleKeepSync(self.db_manager, settings=self.settings, parent_widget=self)
             
             # Выполняем синхронизацию (Markdown копируется как есть)
             success, conflicts = keep_sync.sync()
@@ -650,7 +650,12 @@ class NotesMainWindow(QMainWindow):
                 QMessageBox.critical(self, "Ошибка", "Не удалось синхронизировать с Google Keep")
                 
         except ImportError:
-            QMessageBox.critical(self, "Ошибка", "Библиотека gkeepapi не установлена. Установите: pip install gkeepapi")
+            QMessageBox.critical(
+                self, 
+                "Ошибка", 
+                "Не установлены необходимые библиотеки.\n\n"
+                "Установите: pip install google-auth google-auth-oauthlib google-auth-httplib2"
+            )
         except Exception as e:
             logger.error(f"Ошибка при синхронизации с Google Keep: {e}")
             QMessageBox.critical(self, "Ошибка", f"Ошибка при синхронизации с Google Keep: {str(e)}")

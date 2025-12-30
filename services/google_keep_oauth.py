@@ -28,20 +28,27 @@ SCOPES = ['https://www.googleapis.com/auth/keep']
 class GoogleKeepOAuth:
     """Класс для OAuth 2.0 аутентификации с Google Keep."""
     
-    def __init__(self, credentials_file: Optional[str] = None, token_file: Optional[str] = None):
+    def __init__(
+        self, 
+        credentials_file: Optional[str] = None, 
+        token_file: Optional[str] = None,
+        client_id: Optional[str] = None,
+        client_secret: Optional[str] = None,
+        project_id: Optional[str] = None
+    ):
         """
         Инициализация OAuth аутентификации.
         
         Args:
-            credentials_file: Путь к файлу с OAuth credentials (обязательно!)
-                              Пользователь должен создать свой credentials файл в Google Cloud Console.
-                              См. README.md для инструкций.
+            credentials_file: Путь к файлу с OAuth credentials (приоритет над client_id/secret)
             token_file: Путь к файлу для сохранения токена (по умолчанию: ~/.notes-google-keep/token.json)
+            client_id: OAuth 2.0 Client ID (если не указан credentials_file)
+            client_secret: OAuth 2.0 Client Secret (если не указан credentials_file)
+            project_id: Project ID (опционально, если не указан credentials_file)
         """
         if not HAS_GOOGLE_AUTH:
             raise ImportError("google-auth не установлен. Установите: pip install google-auth google-auth-oauthlib")
         
-        self.credentials_file = credentials_file or self._get_default_credentials_path()
         self.token_file = token_file or self._get_default_token_path()
         self.creds: Optional[Credentials] = None
         
@@ -49,18 +56,37 @@ class GoogleKeepOAuth:
         token_dir = Path(self.token_file).parent
         token_dir.mkdir(parents=True, exist_ok=True)
         
-        # Проверяем наличие credentials файла
-        if not os.path.exists(self.credentials_file):
-            raise FileNotFoundError(
-                f"Файл OAuth credentials не найден: {self.credentials_file}\n\n"
+        # Определяем источник credentials: файл или поля ввода
+        self.credentials_file = credentials_file
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.project_id = project_id
+        
+        # Проверяем наличие credentials
+        if not self._has_credentials():
+            raise ValueError(
+                "OAuth credentials не найдены!\n\n"
+                "Укажите один из вариантов:\n"
+                "1. Путь к файлу credentials.json (credentials_file)\n"
+                "2. Client ID и Client Secret (client_id, client_secret)\n\n"
                 "Создайте OAuth 2.0 credentials в Google Cloud Console:\n"
-                "1. Перейдите: https://console.cloud.google.com/apis/credentials\n"
-                "2. Создайте новый проект (или выберите существующий)\n"
-                "3. Создайте OAuth 2.0 Client ID для 'Desktop app'\n"
-                "4. Скачайте credentials и сохраните как 'credentials.json'\n"
-                "5. Поместите файл в: ~/.notes-google-keep/credentials.json\n\n"
+                "https://console.cloud.google.com/apis/credentials\n\n"
                 "См. README.md для подробных инструкций."
             )
+    
+    def _has_credentials(self) -> bool:
+        """Проверяет наличие credentials (файл или поля ввода)."""
+        # Проверяем файл
+        if self.credentials_file:
+            expanded_path = os.path.expanduser(self.credentials_file)
+            if os.path.exists(expanded_path):
+                return True
+        
+        # Проверяем поля ввода
+        if self.client_id and self.client_secret:
+            return True
+        
+        return False
     
     def _get_default_token_path(self) -> str:
         """Возвращает путь к файлу токена по умолчанию."""
@@ -74,37 +100,59 @@ class GoogleKeepOAuth:
     
     def _load_client_config(self) -> Dict[str, Any]:
         """
-        Загружает конфигурацию OAuth клиента из файла.
+        Загружает конфигурацию OAuth клиента из файла или полей ввода.
         
         Returns:
             Словарь с конфигурацией OAuth клиента
         """
-        try:
-            with open(self.credentials_file, 'r') as f:
-                config = json.load(f)
-            
-            # Проверяем формат файла
-            if 'installed' in config:
-                return config
-            elif 'web' in config:
-                # Если это web credentials, конвертируем в installed формат
-                web_config = config['web']
-                return {
-                    "installed": {
-                        "client_id": web_config.get('client_id'),
-                        "client_secret": web_config.get('client_secret'),
-                        "auth_uri": web_config.get('auth_uri', 'https://accounts.google.com/o/oauth2/auth'),
-                        "token_uri": web_config.get('token_uri', 'https://oauth2.googleapis.com/token'),
-                        "auth_provider_x509_cert_url": web_config.get('auth_provider_x509_cert_url', 'https://www.googleapis.com/oauth2/v1/certs'),
-                        "redirect_uris": ["http://localhost"]
-                    }
+        # Приоритет: файл > поля ввода
+        if self.credentials_file:
+            expanded_path = os.path.expanduser(self.credentials_file)
+            if os.path.exists(expanded_path):
+                try:
+                    with open(expanded_path, 'r') as f:
+                        config = json.load(f)
+                    
+                    # Проверяем формат файла
+                    if 'installed' in config:
+                        return config
+                    elif 'web' in config:
+                        # Если это web credentials, конвертируем в installed формат
+                        web_config = config['web']
+                        return {
+                            "installed": {
+                                "client_id": web_config.get('client_id'),
+                                "client_secret": web_config.get('client_secret'),
+                                "auth_uri": web_config.get('auth_uri', 'https://accounts.google.com/o/oauth2/auth'),
+                                "token_uri": web_config.get('token_uri', 'https://oauth2.googleapis.com/token'),
+                                "auth_provider_x509_cert_url": web_config.get('auth_provider_x509_cert_url', 'https://www.googleapis.com/oauth2/v1/certs'),
+                                "redirect_uris": ["http://localhost"]
+                            }
+                        }
+                    else:
+                        raise ValueError("Неверный формат credentials файла. Ожидается 'installed' или 'web' секция.")
+                except json.JSONDecodeError as e:
+                    raise ValueError(f"Ошибка при чтении credentials файла (неверный JSON): {e}")
+                except Exception as e:
+                    raise ValueError(f"Ошибка при загрузке credentials файла: {e}")
+        
+        # Используем поля ввода
+        if self.client_id and self.client_secret:
+            config = {
+                "installed": {
+                    "client_id": self.client_id,
+                    "client_secret": self.client_secret,
+                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                    "token_uri": "https://oauth2.googleapis.com/token",
+                    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                    "redirect_uris": ["http://localhost"]
                 }
-            else:
-                raise ValueError("Неверный формат credentials файла. Ожидается 'installed' или 'web' секция.")
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Ошибка при чтении credentials файла (неверный JSON): {e}")
-        except Exception as e:
-            raise ValueError(f"Ошибка при загрузке credentials файла: {e}")
+            }
+            if self.project_id:
+                config["installed"]["project_id"] = self.project_id
+            return config
+        
+        raise ValueError("OAuth credentials не найдены. Укажите файл или client_id/client_secret.")
     
     def authenticate(self, parent_widget=None) -> bool:
         """

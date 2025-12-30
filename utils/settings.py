@@ -30,8 +30,10 @@ class Settings:
             },
             "google_keep": {
                 "enabled": False,
-                "email": "",
-                "password": ""
+                "client_id": "",
+                "client_secret": "",
+                "project_id": "",
+                "credentials_file": ""  # Альтернативный путь к файлу credentials.json
             }
         }
         self.load()
