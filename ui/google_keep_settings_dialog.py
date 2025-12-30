@@ -152,6 +152,23 @@ class GoogleKeepSettingsDialog(QDialog):
         # Кнопка теста не зависит от чекбокса, только от наличия credentials
         pass
     
+    def _on_credentials_changed(self):
+        """Обрабатывает изменение email или app password."""
+        # Обновляем состояние кнопки
+        self._update_test_button_state()
+        
+        # Если Master Token уже заполнен, не пытаемся получить его автоматически
+        if self.master_token_input.text().strip():
+            return
+        
+        # Если оба поля заполнены, пытаемся получить Master Token
+        email = self.email_input.text().strip()
+        app_password = self.app_password_input.text().strip()
+        
+        if email and app_password and len(app_password) >= 16:
+            # Запускаем получение токена с задержкой, чтобы не блокировать UI
+            QTimer.singleShot(500, self._get_master_token_async)  # Задержка 500ms после последнего ввода
+    
     def _get_master_token_async(self):
         """Асинхронно получает Master Token через gkeepapi."""
         # Проверяем еще раз, что поля заполнены и токен еще не получен
