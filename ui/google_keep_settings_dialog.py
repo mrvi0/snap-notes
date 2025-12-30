@@ -217,14 +217,27 @@ class GoogleKeepSettingsDialog(QDialog):
         except Exception as e:
             logger.error(f"Ошибка при тестировании соединения: {e}", exc_info=True)
             error_msg = str(e)
-            # Улучшаем сообщение об ошибке для отсутствующих credentials
-            if "token" in error_msg.lower() or "credentials" in error_msg.lower() or "authentication" in error_msg.lower():
+            
+            # Улучшаем сообщение об ошибке
+            if "gkeepapi" in error_msg.lower() or "import" in error_msg.lower():
+                # Ошибка импорта gkeepapi
+                error_msg = (
+                    f"{error_msg}\n\n"
+                    "Для получения Master Token через email/app_password требуется gkeepapi.\n\n"
+                    "Установите: pip install gkeepapi\n\n"
+                    "Или получите Master Token вручную и вставьте его в поле 'Master Token'."
+                )
+            elif "token" in error_msg.lower() or "credentials" in error_msg.lower() or "authentication" in error_msg.lower():
+                # Ошибка аутентификации
                 error_msg = (
                     f"{error_msg}\n\n"
                     "Убедитесь, что вы ввели:\n"
-                    "1. Master Token ИЛИ\n"
-                    "2. Email и App Password (16-символьный токен приложения)"
+                    "1. Master Token (рекомендуется) ИЛИ\n"
+                    "2. Email и App Password (16-символьный токен приложения)\n\n"
+                    "Для получения Master Token:\n"
+                    "gkeepapi -e <email> -p <app_password> gettoken"
                 )
+            
             QMessageBox.critical(
                 self, 
                 "Ошибка", 
