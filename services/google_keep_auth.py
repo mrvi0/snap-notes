@@ -104,7 +104,10 @@ class GoogleKeepAuth:
             logger.info("Используем gpsoauth для получения Master Token...")
             
             # Генерируем android_id (нужен для perform_master_login)
-            android_id = gkeepapi.node.Node.randomId()
+            # android_id - это 16-значное hex число (как MAC-адрес)
+            import random
+            import string
+            android_id = ''.join(random.choices(string.hexdigits.lower(), k=16))
             
             # Выполняем master login через gpsoauth
             # Это то же самое, что делает gkeepapi внутри, но напрямую
