@@ -26,6 +26,7 @@ from settings_dialog import SettingsDialog
 from components import MarkdownEditor, EditorMode
 from ui import LinkIconTextEdit, ConflictDialog
 from ui.google_keep_settings_dialog import GoogleKeepSettingsDialog
+from ui.google_drive_settings_dialog import GoogleDriveSettingsDialog
 
 logger = logging.getLogger(__name__)
 
@@ -321,6 +322,10 @@ class NotesMainWindow(QMainWindow):
         keep_sync_action = QAction("Синхронизация Google Keep", self)
         keep_sync_action.triggered.connect(self.show_google_keep_settings)
         settings_menu.addAction(keep_sync_action)
+        
+        drive_sync_action = QAction("Синхронизация Google Drive", self)
+        drive_sync_action.triggered.connect(self.show_google_drive_settings)
+        settings_menu.addAction(drive_sync_action)
     
     def _darken_color(self, hex_color: str, factor: float = 0.9) -> str:
         """Затемняет цвет для hover эффекта."""
@@ -615,8 +620,11 @@ class NotesMainWindow(QMainWindow):
     
     def on_sync(self):
         """Обрабатывает синхронизацию."""
+        # Проверяем, включена ли синхронизация с Google Drive (приоритет)
+        if self.settings.get('google_drive.enabled', False):
+            self._sync_google_drive()
         # Проверяем, включена ли синхронизация с Google Keep
-        if self.settings.get('google_keep.enabled', False):
+        elif self.settings.get('google_keep.enabled', False):
             self._sync_google_keep()
         else:
             # Используем стандартную синхронизацию (локальный файл)
@@ -675,6 +683,43 @@ class NotesMainWindow(QMainWindow):
     def show_google_keep_settings(self):
         """Показывает диалог настроек синхронизации Google Keep."""
         dialog = GoogleKeepSettingsDialog(self.settings, self)
+        dialog.exec()
+    
+    def _sync_google_drive(self):
+        """Синхронизирует заметки с Google Drive через OAuth 2.0."""
+        try:
+            from services.google_drive_sync import GoogleDriveSync
+            
+            # Создаем экземпляр синхронизатора
+            drive_sync = GoogleDriveSync(self.db_manager, settings=self.settings, parent_widget=self)
+            
+            # Выполняем синхронизацию (Markdown копируется как есть)
+            success, conflicts = drive_sync.sync()
+            
+            if success:
+                if conflicts:
+                    # Обрабатываем конфликты
+                    self._handle_sync_conflicts(conflicts)
+                else:
+                    QMessageBox.information(self, "Синхронизация", "Синхронизация с Google Drive завершена успешно")
+                self.load_notes()
+            else:
+                QMessageBox.critical(self, "Ошибка", "Не удалось синхронизировать с Google Drive")
+                
+        except ImportError:
+            QMessageBox.critical(
+                self, 
+                "Ошибка", 
+                "Не установлены необходимые библиотеки.\n\n"
+                "Установите: pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib python-dateutil"
+            )
+        except Exception as e:
+            logger.error(f"Ошибка при синхронизации с Google Drive: {e}")
+            QMessageBox.critical(self, "Ошибка", f"Ошибка при синхронизации с Google Drive: {str(e)}")
+    
+    def show_google_drive_settings(self):
+        """Показывает диалог настроек синхронизации Google Drive."""
+        dialog = GoogleDriveSettingsDialog(self.settings, self)
         dialog.exec()
     
     def show_settings(self):

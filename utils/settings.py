@@ -33,6 +33,10 @@ class Settings:
                 "master_token": "",  # Master Token для доступа к Google Keep
                 "email": "",  # Email для получения Master Token (если не указан master_token)
                 "app_password": ""  # App Password для получения Master Token (если не указан master_token)
+            },
+            "google_drive": {
+                "enabled": False,
+                "credentials_file": ""  # Путь к файлу credentials.json для OAuth 2.0
             }
         }
         self.load()

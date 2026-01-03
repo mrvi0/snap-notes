@@ -78,7 +78,64 @@ python3 main.py
 ./run.sh
 ```
 
-## Синхронизация с Google Keep
+## Синхронизация
+
+Приложение поддерживает синхронизацию заметок с **Google Drive** (рекомендуется) и **Google Keep**.
+
+### Google Drive (рекомендуется)
+
+**Преимущества:**
+- ✅ Официальный API Google (OAuth 2.0)
+- ✅ Работает на Linux и Android
+- ✅ Заметки хранятся как `.md` файлы
+- ✅ Доступ с любого устройства через Google Drive
+- ✅ Один аккаунт Google для всех устройств
+
+**Настройка:**
+
+1. **Создайте проект в Google Cloud Console:**
+   - Перейдите на https://console.cloud.google.com/
+   - Создайте новый проект (или выберите существующий)
+   - Назовите проект, например "Notes App"
+
+2. **Включите Google Drive API:**
+   - В меню слева выберите "APIs & Services" → "Library"
+   - Найдите "Google Drive API"
+   - Нажмите "Enable"
+
+3. **Создайте OAuth 2.0 credentials:**
+   - Перейдите в "APIs & Services" → "Credentials"
+   - Нажмите "Create Credentials" → "OAuth client ID"
+   - Если появится запрос, настройте OAuth consent screen:
+     - User Type: External
+     - App name: Notes App
+     - User support email: ваш email
+     - Developer contact: ваш email
+     - Нажмите "Save and Continue"
+     - Scopes: оставьте по умолчанию, нажмите "Save and Continue"
+     - Test users: добавьте ваш email, нажмите "Save and Continue"
+   - Application type: **Desktop app**
+   - Name: Notes App
+   - Нажмите "Create"
+
+4. **Скачайте credentials.json:**
+   - Нажмите на созданный OAuth client
+   - Нажмите "Download JSON"
+   - Сохраните файл как `credentials.json`
+
+5. **Настройте приложение:**
+   - Откройте "Настройки" → "Синхронизация Google Drive"
+   - Укажите путь к `credentials.json`
+   - Нажмите "Тест соединения"
+   - При первом подключении откроется браузер для авторизации
+   - После успешной авторизации нажмите "OK"
+
+**Использование на Android:**
+- Заметки будут храниться в папке "Notes App" в Google Drive
+- Вы можете открывать и редактировать `.md` файлы через любое приложение для работы с Google Drive
+- Или создать простое Android приложение для синхронизации
+
+### Google Keep
 
 Приложение поддерживает синхронизацию заметок с Google Keep через **Master Token**.
 

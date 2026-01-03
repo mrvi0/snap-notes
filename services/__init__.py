@@ -9,3 +9,9 @@ try:
 except ImportError:
     __all__ = ['SyncManager', 'MarkdownLevel']
 
+try:
+    from .google_drive_sync import GoogleDriveSync
+    __all__.append('GoogleDriveSync')
+except ImportError:
+    pass
+
