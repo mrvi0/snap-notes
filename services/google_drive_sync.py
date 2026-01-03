@@ -149,9 +149,12 @@ class GoogleDriveSync:
                             conflicts.append((local_note, drive_note, "local_newer"))
                         elif drive_note.updated_at > local_note.updated_at:
                             # Обновляем локальную заметку
-                            local_note.markdown_content = drive_note.markdown_content
-                            local_note.updated_at = drive_note.updated_at
-                            self.db_manager.update_note(local_note)
+                            if local_note.id:
+                                self.db_manager.update_note(
+                                    local_note.id,
+                                    local_note.title,
+                                    drive_note.markdown_content
+                                )
                 else:
                     # Новая заметка из Google Drive
                     self.db_manager.create_note(drive_note.title, drive_note.markdown_content)
@@ -165,4 +168,6 @@ class GoogleDriveSync:
         except Exception as e:
             logger.error(f"Ошибка при синхронизации с Google Drive: {e}")
             return False, []
+
+
 

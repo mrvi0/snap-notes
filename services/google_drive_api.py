@@ -119,7 +119,8 @@ class GoogleDriveAPI:
         
         try:
             # Получаем все .md файлы из папки заметок
-            query = f"'{self.notes_folder_id}' in parents and mimeType='text/plain' and trashed=false"
+            # Используем поиск по расширению файла
+            query = f"'{self.notes_folder_id}' in parents and name contains '.md' and trashed=false"
             results = self.service.files().list(
                 q=query,
                 spaces='drive',
@@ -216,8 +217,14 @@ class GoogleDriveAPI:
             items = results.get('files', [])
             
             # Подготавливаем содержимое файла
+            from googleapiclient.http import MediaIoBaseUpload
+            
             file_content = note.markdown_content.encode('utf-8')
-            media_body = io.BytesIO(file_content)
+            media_body = MediaIoBaseUpload(
+                io.BytesIO(file_content),
+                mimetype='text/plain',
+                resumable=True
+            )
             
             if items:
                 # Обновляем существующий файл

@@ -123,3 +123,5 @@ class GoogleDriveAuth:
         """Проверяет, аутентифицирован ли пользователь."""
         return self.creds is not None and self.creds.valid
 
+
+
